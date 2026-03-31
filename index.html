@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Snake Game</title>
+  <style>
+    body { background: #222; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    canvas { background: #eee; }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="400" height="400"></canvas>
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scale = 20;
+    const rows = canvas.height / scale;
+    const cols = canvas.width / scale;
+
+    let snake = [{x:10, y:10}];
+    let food = {x: Math.floor(Math.random()*cols), y: Math.floor(Math.random()*rows)};
+    let dx = 0;
+    let dy = 0;
+
+    function draw() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = 'red';
+      ctx.fillRect(food.x*scale, food.y*scale, scale, scale);
+      ctx.fillStyle = 'green';
+      snake.forEach(part => ctx.fillRect(part.x*scale, part.y*scale, scale, scale));
+    }
+
+    function update() {
+      const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+      snake.unshift(head);
+      if(head.x === food.x && head.y === food.y){
+        food = {x: Math.floor(Math.random()*cols), y: Math.floor(Math.random()*rows)};
+      } else {
+        snake.pop();
+      }
+      draw();
+    }
+
+    window.addEventListener('keydown', e => {
+      if(e.key === 'ArrowUp') { dx=0; dy=-1 }
+      if(e.key === 'ArrowDown') { dx=0; dy=1 }
+      if(e.key === 'ArrowLeft') { dx=-1; dy=0 }
+      if(e.key === 'ArrowRight') { dx=1; dy=0 }
+    });
+
+    setInterval(update, 200);
+  </script>
+</body>
+</html>
