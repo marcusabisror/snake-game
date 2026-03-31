@@ -30,123 +30,123 @@
   <canvas id="game" width="400" height="400"></canvas>
 
   <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
-    const scoreText = document.getElementById("score");
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const scoreText = document.getElementById("score");
 
-    const scale = 20;
-    const rows = canvas.height / scale;
-    const cols = canvas.width / scale;
+  const scale = 20;
+  const rows = canvas.height / scale;
+  const cols = canvas.width / scale;
+  const totalCells = rows * cols; // <-- important
 
-    let snake = [{ x: 10, y: 10 }];
-    let food = randomFood();
-    let dx = 0;
-    let dy = 0;
-    let score = 0;
-    let gameOver = false;
+  let snake = [{ x: 10, y: 10 }];
+  let food = randomFood();
+  let dx = 0;
+  let dy = 0;
+  let score = 0;
+  let gameOver = false;
+  let started = false;
 
-    // Draw grid
-    function drawGrid() {
-      ctx.strokeStyle = "#bbb";
-      for (let i = 0; i < rows; i++) {
-        for (let j = 0; j < cols; j++) {
-          ctx.strokeRect(j * scale, i * scale, scale, scale);
-        }
+  function drawGrid() {
+    ctx.strokeStyle = "#bbb";
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        ctx.strokeRect(j * scale, i * scale, scale, scale);
       }
     }
+  }
 
-    // Random food
-    function randomFood() {
-      return {
-        x: Math.floor(Math.random() * cols),
-        y: Math.floor(Math.random() * rows),
-      };
-    }
+  function randomFood() {
+    return {
+      x: Math.floor(Math.random() * cols),
+      y: Math.floor(Math.random() * rows),
+    };
+  }
 
-    // Draw snake part with rounded edges
-    function drawSnakePart(x, y, color, radius = 6) {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.roundRect(x * scale, y * scale, scale, scale, radius);
-      ctx.fill();
-    }
+  function drawSnakePart(x, y, color, radius = 6) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(x * scale, y * scale, scale, scale, radius);
+    ctx.fill();
+  }
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawGrid();
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
 
-      // Draw food
-      ctx.fillStyle = "red";
-      ctx.fillRect(food.x * scale, food.y * scale, scale, scale);
+    ctx.fillStyle = "red";
+    ctx.fillRect(food.x * scale, food.y * scale, scale, scale);
 
-      // Draw snake body
-      snake.forEach((part, i) => {
-        if (i === 0) {
-          drawSnakePart(part.x, part.y, "darkgreen", 10); // Head
-        } else if (i === snake.length - 1) {
-          drawSnakePart(part.x, part.y, "green", 4); // Tail
-        } else {
-          drawSnakePart(part.x, part.y, "green", 6); // Body
-        }
-      });
-    }
-
-    function update() {
-      if (gameOver) return;
-
-      const head = { x: snake[0].x + dx, y: snake[0].y + dy };
-
-      // Collision with wall
-      if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows) {
-        endGame();
-        return;
-      }
-
-      // Collision with itself
-      if (snake.some(part => part.x === head.x && part.y === head.y)) {
-        endGame();
-        return;
-      }
-
-      snake.unshift(head);
-
-      // Eating food
-      if (head.x === food.x && head.y === food.y) {
-        score++;
-        scoreText.innerText = "Score: " + score;
-        food = randomFood();
+    snake.forEach((part, i) => {
+      if (i === 0) {
+        drawSnakePart(part.x, part.y, "darkgreen", 10);
+      } else if (i === snake.length - 1) {
+        drawSnakePart(part.x, part.y, "green", 4);
       } else {
-        snake.pop();
-      }
-
-      draw();
-    }
-
-    function endGame() {
-      gameOver = true;
-      alert("Game Over! Final Score: " + score);
-    }
-
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowUp" && dy !== 1) {
-        dx = 0;
-        dy = -1;
-      }
-      if (e.key === "ArrowDown" && dy !== -1) {
-        dx = 0;
-        dy = 1;
-      }
-      if (e.key === "ArrowLeft" && dx !== 1) {
-        dx = -1;
-        dy = 0;
-      }
-      if (e.key === "ArrowRight" && dx !== -1) {
-        dx = 1;
-        dy = 0;
+        drawSnakePart(part.x, part.y, "green", 6);
       }
     });
+  }
 
-    setInterval(update, 120);
-  </script>
+  function update() {
+    if (gameOver) return;
+
+    if (!started) {
+      draw();
+      return;
+    }
+
+    const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+    // Hit wall?
+    if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows) {
+      return endGame("Game Over! Final Score: " + score);
+    }
+
+    // Hit itself?
+    if (snake.some(p => p.x === head.x && p.y === head.y)) {
+      return endGame("Game Over! Final Score: " + score);
+    }
+
+    snake.unshift(head);
+
+    if (head.x === food.x && head.y === food.y) {
+      score++;
+      scoreText.innerText = "Score: " + score;
+      food = randomFood();
+    } else {
+      snake.pop();
+    }
+
+    // 🏆 WIN CONDITION
+    if (snake.length === totalCells) {
+      return endGame("YOU WIN! You filled the entire board!");
+    }
+
+    draw();
+  }
+
+  function endGame(message) {
+    gameOver = true;
+    setTimeout(() => alert(message), 10);
+  }
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowUp" && dy !== 1) {
+      dx = 0; dy = -1; started = true;
+    }
+    if (e.key === "ArrowDown" && dy !== -1) {
+      dx = 0; dy = 1; started = true;
+    }
+    if (e.key === "ArrowLeft" && dx !== 1) {
+      dx = -1; dy = 0; started = true;
+    }
+    if (e.key === "ArrowRight" && dx !== -1) {
+      dx = 1; dy = 0; started = true;
+    }
+  });
+
+  setInterval(update, 120);
+</script>
 </body>
 </html>
