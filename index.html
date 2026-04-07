@@ -122,6 +122,21 @@
       border-radius: 6px;
       cursor: pointer;
     }
+
+    /* GAME OVER OVERLAY */
+    #game-over-overlay {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 0 15px black;
+      z-index: 10;
+      pointer-events: none;
+    }
   </style>
 </head>
 
@@ -187,7 +202,11 @@
     <button id="restart" style="display:none;">Restart</button>
   </div>
 
-  <canvas id="game" width="400" height="400"></canvas>
+  <!-- GAME AREA WITH OVERLAY -->
+  <div style="position:relative; width:400px; height:400px;">
+      <canvas id="game" width="400" height="400"></canvas>
+      <div id="game-over-overlay">GAME OVER</div>
+  </div>
 
 <script>
 /* LOAD SOUNDS */
@@ -195,7 +214,7 @@ const eatSound = new Audio("sounds/eat_beep.wav");
 const gameOverSound = new Audio("sounds/game_over.wav");
 const bgm = new Audio("sounds/bg_loop.wav");
 bgm.loop = true;
-bgm.volume = 0.15;  // Lower background music volume
+bgm.volume = 0.15;
 
 /* SOUND SETTINGS */
 let masterSound = true;
@@ -258,7 +277,6 @@ bgmToggle.onchange = () => {
   updateBGM();
 };
 
-
 /* GAME LOGIC */
 let canvas, ctx;
 let scale, rows, cols;
@@ -281,6 +299,7 @@ function setupGame() {
   score = 0;
 
   document.getElementById('score').innerText = "Score: 0";
+  document.getElementById('game-over-overlay').style.display = "none";
 
   placeFood();
   draw();
@@ -322,7 +341,9 @@ function update() {
 
   if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows)
     return gameOver();
-  if (snake.some(part => part.x === head.x && part.y === head.y))
+  
+  // FIXED COLLISION BUG: ignore current head
+  if (snake.slice(1).some(part => part.x === head.x && part.y === head.y))
     return gameOver();
 
   snake.unshift(head);
@@ -346,13 +367,15 @@ function gameOver() {
   clearInterval(gameInterval);
   document.getElementById('restart').style.display = "block";
   playGameOverSound();
-  alert("Game Over!");
+
+  document.getElementById('game-over-overlay').style.display = "block";
 }
 
 function winGame() {
   clearInterval(gameInterval);
   document.getElementById('restart').style.display = "block";
-  alert("You filled the whole board — YOU WIN!");
+  document.getElementById('game-over-overlay').innerText = "YOU WIN!";
+  document.getElementById('game-over-overlay').style.display = "block";
 }
 
 window.addEventListener('keydown', (e) => {
