@@ -3,14 +3,14 @@
 <head>
   <title>Snake Game</title>
   <style>
-    body { 
-      background: #222; 
-      display: flex; 
+    body {
+      background: #222;
+      display: flex;
       flex-direction: column;
-      justify-content: flex-start; 
-      align-items: center; 
-      height: 100vh; 
-      margin: 0; 
+      justify-content: flex-start;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
       color: white;
       font-family: Arial;
     }
@@ -35,27 +35,151 @@
 
     canvas { background: #111; }
     #score { font-size: 18px; }
+
+    /* SOUND SETTINGS UI */
+    .settings-btn {
+      padding: 8px 16px;
+      background: #555;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+      background: #222;
+      margin: 10% auto;
+      padding: 20px;
+      width: 300px;
+      color: white;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 12px 0;
+      font-size: 16px;
+    }
+
+    /* Switch styling */
+    .switch {
+      position: relative;
+      width: 50px;
+      height: 24px;
+    }
+
+    .switch input {
+      display: none;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      background-color: #777;
+      border-radius: 24px;
+      top: 0; left: 0; right: 0; bottom: 0;
+      transition: .4s;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: .4s;
+    }
+
+    input:checked + .slider {
+      background-color: #4caf50;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    .close-btn {
+      margin-top: 15px;
+      padding: 8px 16px;
+      background: #555;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
   </style>
 </head>
+
 <body>
 
   <div id="controls">
     <label>Speed:</label>
-<select id="speed">
-  <option value="300">Beginner</option>
-  <option value="200" selected>Moderate</option>
-  <option value="120">Pro</option>
-</select>
+    <select id="speed">
+      <option value="300">Beginner</option>
+      <option value="200" selected>Moderate</option>
+      <option value="120">Pro</option>
+    </select>
 
     <label>Board Size:</label>
-<select id="board">
-  <option value="18" selected>18×18</option>
-  <option value="15">15×15</option>
-  <option value="10">10×10</option>
-  <option value="7">7×7</option>
-</select>
+    <select id="board">
+      <option value="18" selected>18×18</option>
+      <option value="15">15×15</option>
+      <option value="10">10×10</option>
+      <option value="7">7×7</option>
+    </select>
 
     <button id="start">Start Game</button>
+  </div>
+
+  <!-- SOUND SETTINGS BUTTON -->
+  <button id="soundSettingsBtn" class="settings-btn">Sound</button>
+
+  <!-- SOUND SETTINGS MODAL -->
+  <div id="soundModal" class="modal">
+    <div class="modal-content">
+      <h2>Sound Settings</h2>
+
+      <div class="toggle-row">
+        <span>Master Sound</span>
+        <label class="switch">
+          <input type="checkbox" id="masterSoundToggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <span>Sound Effects</span>
+        <label class="switch">
+          <input type="checkbox" id="effectsToggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <span>Background Music</span>
+        <label class="switch">
+          <input type="checkbox" id="bgmToggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <button id="closeModal" class="close-btn">Close</button>
+    </div>
   </div>
 
   <div id="top-bar">
@@ -65,145 +189,196 @@
 
   <canvas id="game" width="400" height="400"></canvas>
 
-  <script>
-    let canvas, ctx;
-    let scale, rows, cols;
-    let snake, food, dx, dy;
-    let gameInterval = null;
-    let score = 0;
-    let boardSize = 20;
+<script>
+/* LOAD SOUNDS */
+const eatSound = new Audio("sounds/eat_beep.wav");
+const gameOverSound = new Audio("sounds/game_over.wav");
+const bgm = new Audio("sounds/bg_loop.wav");
+bgm.loop = true;
+bgm.volume = 0.15;  // Lower background music volume
 
-    // Setup new game
-    function setupGame() {
-      canvas = document.getElementById('game');
-      ctx = canvas.getContext('2d');
+/* SOUND SETTINGS */
+let masterSound = true;
+let effectsEnabled = true;
+let bgmEnabled = true;
 
-      boardSize = Number(document.getElementById('board').value);
-      scale = 400 / boardSize;
-      rows = cols = boardSize;
+function updateSoundSettings() {
+  if (!masterSound) {
+    eatSound.volume = 0;
+    gameOverSound.volume = 0;
+    bgm.volume = 0;
+    return;
+  }
 
-      snake = [{ x: Math.floor(cols / 2), y: Math.floor(rows / 2) }];
-      dx = 0;
-      dy = 0;
-      score = 0;
-      document.getElementById('score').innerText = "Score: 0";
+  eatSound.volume = effectsEnabled ? 1 : 0;
+  gameOverSound.volume = effectsEnabled ? 1 : 0;
+  bgm.volume = bgmEnabled ? 0.15 : 0;
+}
 
-      placeFood();
-      draw();
+function playEatSound() {
+  if (masterSound && effectsEnabled) eatSound.play();
+}
+
+function playGameOverSound() {
+  if (masterSound && effectsEnabled) gameOverSound.play();
+}
+
+function updateBGM() {
+  if (masterSound && bgmEnabled) bgm.play();
+  else bgm.pause();
+}
+
+/* MODAL UI LOGIC */
+const soundModal = document.getElementById("soundModal");
+const soundBtn   = document.getElementById("soundSettingsBtn");
+const closeModal = document.getElementById("closeModal");
+
+const masterToggle  = document.getElementById("masterSoundToggle");
+const effectsToggle = document.getElementById("effectsToggle");
+const bgmToggle     = document.getElementById("bgmToggle");
+
+soundBtn.onclick = () => soundModal.style.display = "block";
+closeModal.onclick = () => soundModal.style.display = "none";
+window.onclick = (e) => {
+  if (e.target === soundModal) soundModal.style.display = "none";
+};
+
+masterToggle.onchange = () => {
+  masterSound = masterToggle.checked;
+  updateSoundSettings();
+  updateBGM();
+};
+effectsToggle.onchange = () => {
+  effectsEnabled = effectsToggle.checked;
+  updateSoundSettings();
+};
+bgmToggle.onchange = () => {
+  bgmEnabled = bgmToggle.checked;
+  updateSoundSettings();
+  updateBGM();
+};
+
+
+/* GAME LOGIC */
+let canvas, ctx;
+let scale, rows, cols;
+let snake, food, dx, dy;
+let gameInterval = null;
+let score = 0;
+let boardSize = 20;
+
+function setupGame() {
+  canvas = document.getElementById('game');
+  ctx = canvas.getContext('2d');
+
+  boardSize = Number(document.getElementById('board').value);
+  scale = 400 / boardSize;
+  rows = cols = boardSize;
+
+  snake = [{ x: Math.floor(cols / 2), y: Math.floor(rows / 2) }];
+  dx = 0;
+  dy = 0;
+  score = 0;
+
+  document.getElementById('score').innerText = "Score: 0";
+
+  placeFood();
+  draw();
+}
+
+function placeFood() {
+  food = {
+    x: Math.floor(Math.random() * cols),
+    y: Math.floor(Math.random() * rows)
+  };
+}
+
+function drawGrid() {
+  ctx.strokeStyle = "#333";
+  for (let x = 0; x < cols; x++) {
+    for (let y = 0; y < rows; y++) {
+      ctx.strokeRect(x * scale, y * scale, scale, scale);
     }
+  }
+}
 
-    // Random food
-    function placeFood() {
-      food = {
-        x: Math.floor(Math.random() * cols),
-        y: Math.floor(Math.random() * rows)
-      };
-    }
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGrid();
 
-    // Draw grid lines
-    function drawGrid() {
-      ctx.strokeStyle = "#333";
-      for (let x = 0; x < cols; x++) {
-        for (let y = 0; y < rows; y++) {
-          ctx.strokeRect(x * scale, y * scale, scale, scale);
-        }
-      }
-    }
+  ctx.fillStyle = "red";
+  ctx.fillRect(food.x * scale, food.y * scale, scale, scale);
 
-    // Draw everything
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawGrid();
+  snake.forEach((part, i) => {
+    ctx.fillStyle = (i === 0) ? "green" : "lime";
+    ctx.fillRect(part.x * scale, part.y * scale, scale, scale);
+  });
+}
 
-      // Food
-      ctx.fillStyle = "red";
-      ctx.fillRect(food.x * scale, food.y * scale, scale, scale);
+function update() {
+  if (dx === 0 && dy === 0) { draw(); return; }
 
-      // Snake
-      snake.forEach((part, i) => {
-        ctx.fillStyle = (i === 0) ? "green" : "lime";
-        ctx.fillRect(part.x * scale, part.y * scale, scale, scale);
-      });
-    }
+  const head = { x: snake[0].x + dx, y: snake[0].y + dy };
 
-    // Game loop update
-    function update() {
-      if (dx === 0 && dy === 0) {
-        draw();
-        return;
-      }
+  if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows)
+    return gameOver();
+  if (snake.some(part => part.x === head.x && part.y === head.y))
+    return gameOver();
 
-      const head = {
-        x: snake[0].x + dx,
-        y: snake[0].y + dy
-      };
+  snake.unshift(head);
 
-      // Wall Collision
-      if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows) {
-        return gameOver();
-      }
+  if (head.x === food.x && head.y === food.y) {
+    playEatSound();
+    score++;
+    document.getElementById('score').innerText = "Score: " + score;
 
-      // Self collision
-      if (snake.some(part => part.x === head.x && part.y === head.y)) {
-        return gameOver();
-      }
+    if (score >= cols * rows - 1) return winGame();
 
-      snake.unshift(head);
+    placeFood();
+  } else {
+    snake.pop();
+  }
 
-      // Eat food
-      if (head.x === food.x && head.y === food.y) {
-        score++;
-        document.getElementById('score').innerText = "Score: " + score;
+  draw();
+}
 
-        if (score >= cols * rows - 1) {
-          return winGame();
-        }
+function gameOver() {
+  clearInterval(gameInterval);
+  document.getElementById('restart').style.display = "block";
+  playGameOverSound();
+  alert("Game Over!");
+}
 
-        placeFood();
-      } else {
-        snake.pop();
-      }
+function winGame() {
+  clearInterval(gameInterval);
+  document.getElementById('restart').style.display = "block";
+  alert("You filled the whole board — YOU WIN!");
+}
 
-      draw();
-    }
+window.addEventListener('keydown', (e) => {
+  if (e.key === "ArrowUp" && dy !== 1)    { dx = 0; dy = -1; }
+  if (e.key === "ArrowDown" && dy !== -1) { dx = 0; dy = 1; }
+  if (e.key === "ArrowLeft" && dx !== 1)  { dx = -1; dy = 0; }
+  if (e.key === "ArrowRight" && dx !== -1){ dx = 1; dy = 0; }
+});
 
-    function gameOver() {
-      clearInterval(gameInterval);
-      document.getElementById('restart').style.display = "block";
-      alert("Game Over!");
-    }
+document.getElementById('start').onclick = () => {
+  clearInterval(gameInterval);
+  setupGame();
+  const speed = Number(document.getElementById('speed').value);
+  gameInterval = setInterval(update, speed);
+  document.getElementById('restart').style.display = "none";
+  updateBGM();
+};
 
-    function winGame() {
-      clearInterval(gameInterval);
-      document.getElementById('restart').style.display = "block";
-      alert("You filled the whole board — YOU WIN!");
-    }
+document.getElementById('restart').onclick = () => {
+  clearInterval(gameInterval);
+  setupGame();
+  const speed = Number(document.getElementById('speed').value);
+  gameInterval = setInterval(update, speed);
+  document.getElementById('restart').style.display = "none";
+};
+</script>
 
-    // Controls
-    window.addEventListener('keydown', (e) => {
-      if (e.key === "ArrowUp" && dy !== 1)    { dx = 0; dy = -1; }
-      if (e.key === "ArrowDown" && dy !== -1) { dx = 0; dy = 1; }
-      if (e.key === "ArrowLeft" && dx !== 1)  { dx = -1; dy = 0; }
-      if (e.key === "ArrowRight" && dx !== -1){ dx = 1; dy = 0; }
-    });
-
-    // Start button
-    document.getElementById('start').onclick = () => {
-      clearInterval(gameInterval);
-      setupGame();
-      const speed = Number(document.getElementById('speed').value);
-      gameInterval = setInterval(update, speed);
-      document.getElementById('restart').style.display = "none";
-    };
-
-    // Restart button
-    document.getElementById('restart').onclick = () => {
-      clearInterval(gameInterval);
-      setupGame();
-      const speed = Number(document.getElementById('speed').value);
-      gameInterval = setInterval(update, speed);
-      document.getElementById('restart').style.display = "none";
-    };
-  </script>
 </body>
 </html>
