@@ -283,14 +283,21 @@ document.getElementById("game-over-overlay").style.display="block";
 
 /* CONTROLS */
 window.addEventListener("keydown",(e)=>{
-if(e.key==" "){paused=!paused; return;}
 
-if(e.key=="ArrowUp"&&dy!=1){dx=0;dy=-1;}
-if(e.key=="ArrowDown"&&dy!=-1){dx=0;dy=1;}
-if(e.key=="ArrowLeft"&&dx!=1){dx=-1;dy=0;}
-if(e.key=="ArrowRight"&&dx!=-1){dx=1;dy=0;}
+  // STOP browser default behavior (THIS FIXES RESTART BUG)
+  if(e.key === " ") {
+    e.preventDefault();
+    paused = !paused;
+    return;
+  }
+
+  if(paused) return;
+
+  if(e.key=="ArrowUp"&&dy!=1){dx=0;dy=-1;}
+  if(e.key=="ArrowDown"&&dy!=-1){dx=0;dy=1;}
+  if(e.key=="ArrowLeft"&&dx!=1){dx=-1;dy=0;}
+  if(e.key=="ArrowRight"&&dx!=-1){dx=1;dy=0;}
 });
-
 /* BUTTONS */
 document.getElementById("pauseBtn").onclick=()=>paused=!paused;
 
