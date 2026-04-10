@@ -285,6 +285,10 @@ let gameInterval = null;
 let score = 0;
 let boardSize = 20;
 
+/* FIX 1: direction lock */
+let nextDirection = null;
+let directionLocked = false;
+
 function setupGame() {
   canvas = document.getElementById('game');
   ctx = canvas.getContext('2d');
@@ -335,15 +339,25 @@ function draw() {
 }
 
 function update() {
+
+  /* FIX 2: apply direction change ONCE per frame */
+  if (nextDirection) {
+    dx = nextDirection.dx;
+    dy = nextDirection.dy;
+    nextDirection = null;
+  }
+  directionLocked = false;
+
   if (dx === 0 && dy === 0) { draw(); return; }
 
   const head = { x: snake[0].x + dx, y: snake[0].y + dy };
 
+  /* WALL COLLISION */
   if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows)
     return gameOver();
-  
-  // FIXED COLLISION BUG: ignore current head
-  if (snake.slice(1).some(part => part.x === head.x && part.y === head.y))
+
+  /* SELF COLLISION (corrected: ignore the current head) */
+  if (snake.slice(1).some(p => p.x === head.x && p.y === head.y))
     return gameOver();
 
   snake.unshift(head);
@@ -367,7 +381,7 @@ function gameOver() {
   clearInterval(gameInterval);
   document.getElementById('restart').style.display = "block";
   playGameOverSound();
-
+  document.getElementById('game-over-overlay').innerText = "GAME OVER";
   document.getElementById('game-over-overlay').style.display = "block";
 }
 
@@ -379,10 +393,18 @@ function winGame() {
 }
 
 window.addEventListener('keydown', (e) => {
-  if (e.key === "ArrowUp" && dy !== 1)    { dx = 0; dy = -1; }
-  if (e.key === "ArrowDown" && dy !== -1) { dx = 0; dy = 1; }
-  if (e.key === "ArrowLeft" && dx !== 1)  { dx = -1; dy = 0; }
-  if (e.key === "ArrowRight" && dx !== -1){ dx = 1; dy = 0; }
+  if (directionLocked) return;
+
+  let newDx = dx;
+  let newDy = dy;
+
+  if (e.key === "ArrowUp" && dy !== 1)    { newDx = 0; newDy = -1; }
+  if (e.key === "ArrowDown" && dy !== -1) { newDx = 0; newDy = 1; }
+  if (e.key === "ArrowLeft" && dx !== 1)  { newDx = -1; newDy = 0; }
+  if (e.key === "ArrowRight" && dx !== -1){ newDx = 1; newDy = 0; }
+
+  nextDirection = { dx: newDx, dy: newDy };
+  directionLocked = true;
 });
 
 document.getElementById('start').onclick = () => {
