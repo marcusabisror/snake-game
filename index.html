@@ -1,429 +1,315 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Snake Game</title>
-  <style>
-    body {
-      background: #222;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      color: white;
-      font-family: Arial;
-    }
+<title>Snake Game</title>
+<style>
+body {
+  background:#222;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  color:white;
+  font-family:Arial;
+}
 
-    #controls {
-      display: flex;
-      gap: 10px;
-      margin: 10px 0;
-    }
+#controls { margin:10px; }
+canvas { background:#111; }
 
-    select, button {
-      padding: 5px 10px;
-      font-size: 14px;
-    }
+.modal {
+  display:none;
+  position:fixed;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.6);
+  top:0; left:0;
+  z-index:999;
+}
+.modal-content {
+  background:#222;
+  padding:20px;
+  margin:10% auto;
+  width:300px;
+  text-align:center;
+  border-radius:10px;
+}
 
-    #top-bar {
-      width: 400px;
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 5px;
-    }
-
-    canvas { background: #111; }
-    #score { font-size: 18px; }
-
-    /* SOUND SETTINGS UI */
-    .settings-btn {
-      padding: 8px 16px;
-      background: #555;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 999;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(0,0,0,0.5);
-    }
-
-    .modal-content {
-      background: #222;
-      margin: 10% auto;
-      padding: 20px;
-      width: 300px;
-      color: white;
-      border-radius: 10px;
-      text-align: center;
-    }
-
-    .toggle-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 12px 0;
-      font-size: 16px;
-    }
-
-    /* Switch styling */
-    .switch {
-      position: relative;
-      width: 50px;
-      height: 24px;
-    }
-
-    .switch input {
-      display: none;
-    }
-
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      background-color: #777;
-      border-radius: 24px;
-      top: 0; left: 0; right: 0; bottom: 0;
-      transition: .4s;
-    }
-
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      border-radius: 50%;
-      transition: .4s;
-    }
-
-    input:checked + .slider {
-      background-color: #4caf50;
-    }
-
-    input:checked + .slider:before {
-      transform: translateX(26px);
-    }
-
-    .close-btn {
-      margin-top: 15px;
-      padding: 8px 16px;
-      background: #555;
-      border: none;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    /* GAME OVER OVERLAY */
-    #game-over-overlay {
-      display: none;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 48px;
-      font-weight: bold;
-      color: white;
-      text-shadow: 0 0 15px black;
-      z-index: 10;
-      pointer-events: none;
-    }
-  </style>
+#game-over-overlay {
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  font-size:40px;
+  display:none;
+}
+</style>
 </head>
 
 <body>
 
-  <div id="controls">
-    <label>Speed:</label>
-    <select id="speed">
-      <option value="300">Beginner</option>
-      <option value="200" selected>Moderate</option>
-      <option value="120">Pro</option>
-    </select>
+<div id="controls">
+Speed:
+<select id="speed">
+<option value="300">Beginner</option>
+<option value="200" selected>Moderate</option>
+<option value="120">Pro</option>
+</select>
 
-    <label>Board Size:</label>
-    <select id="board">
-      <option value="18" selected>18×18</option>
-      <option value="15">15×15</option>
-      <option value="10">10×10</option>
-      <option value="7">7×7</option>
-    </select>
+Board:
+<select id="board">
+<option value="18">18</option>
+<option value="15">15</option>
+<option value="10">10</option>
+<option value="7">7</option>
+</select>
 
-    <button id="start">Start Game</button>
-  </div>
+<button id="start">Start</button>
+<button id="pauseBtn">Pause</button>
+<button id="howBtn">How To Play</button>
+</div>
 
-  <!-- SOUND SETTINGS BUTTON -->
-  <button id="soundSettingsBtn" class="settings-btn">Sound</button>
+<div id="score">Score: 0</div>
 
-  <!-- SOUND SETTINGS MODAL -->
-  <div id="soundModal" class="modal">
-    <div class="modal-content">
-      <h2>Sound Settings</h2>
+<div style="position:relative">
+<canvas id="game" width="400" height="400"></canvas>
+<div id="game-over-overlay"></div>
+</div>
 
-      <div class="toggle-row">
-        <span>Master Sound</span>
-        <label class="switch">
-          <input type="checkbox" id="masterSoundToggle" checked>
-          <span class="slider"></span>
-        </label>
-      </div>
+<!-- CONTINUE MODAL -->
+<div id="continueModal" class="modal">
+<div class="modal-content">
+<h2>Continue?</h2>
+<p id="continueText"></p>
+<button id="watchAd">Watch Ad</button><br><br>
+<button id="useKey">Use Key</button><br><br>
+<button id="buyKey">Buy Keys</button><br><br>
+<button id="endGame">End Game</button>
+</div>
+</div>
 
-      <div class="toggle-row">
-        <span>Sound Effects</span>
-        <label class="switch">
-          <input type="checkbox" id="effectsToggle" checked>
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <div class="toggle-row">
-        <span>Background Music</span>
-        <label class="switch">
-          <input type="checkbox" id="bgmToggle" checked>
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <button id="closeModal" class="close-btn">Close</button>
-    </div>
-  </div>
-
-  <div id="top-bar">
-    <div id="score">Score: 0</div>
-    <button id="restart" style="display:none;">Restart</button>
-  </div>
-
-  <!-- GAME AREA WITH OVERLAY -->
-  <div style="position:relative; width:400px; height:400px;">
-      <canvas id="game" width="400" height="400"></canvas>
-      <div id="game-over-overlay">GAME OVER</div>
-  </div>
+<!-- HOW TO PLAY -->
+<div id="howModal" class="modal">
+<div class="modal-content">
+<h2>How To Play</h2>
+<p>
+Goal: Fill the entire grid.<br><br>
+Use arrow keys to move.<br>
+Avoid walls and yourself.<br><br>
+You can continue after losing using ads or keys.
+</p>
+<button onclick="closeHow()">Close</button>
+</div>
+</div>
 
 <script>
-/* LOAD SOUNDS */
+
+/* SOUNDS */
 const eatSound = new Audio("sounds/eat_beep.wav");
+const eat10Sound = new Audio("sounds/eat10.wav");
+const winSound = new Audio("sounds/win.wav");
 const gameOverSound = new Audio("sounds/game_over.wav");
 const bgm = new Audio("sounds/bg_loop.wav");
 bgm.loop = true;
-bgm.volume = 0.15;
 
-/* SOUND SETTINGS */
-let masterSound = true;
-let effectsEnabled = true;
-let bgmEnabled = true;
+/* STATE */
+let canvas, ctx, scale, rows, cols;
+let snake, food, dx, dy, score;
+let gameInterval;
+let paused = false;
 
-function updateSoundSettings() {
-  if (!masterSound) {
-    eatSound.volume = 0;
-    gameOverSound.volume = 0;
-    bgm.volume = 0;
-    return;
-  }
+/* CONTINUE SYSTEM */
+let savedState = null;
+let continuesUsed = 0;
+let maxContinues = 0;
+let playerKeys = 0;
 
-  eatSound.volume = effectsEnabled ? 1 : 0;
-  gameOverSound.volume = effectsEnabled ? 1 : 0;
-  bgm.volume = bgmEnabled ? 0.15 : 0;
+/* SETUP */
+function setupGame(){
+canvas = document.getElementById("game");
+ctx = canvas.getContext("2d");
+
+let size = Number(document.getElementById("board").value);
+scale = 400/size;
+rows=cols=size;
+
+if(size==7) maxContinues=1;
+else if(size==10) maxContinues=2;
+else if(size==15) maxContinues=3;
+else maxContinues=4;
+
+continuesUsed=0;
+
+snake=[{x:Math.floor(cols/2),y:Math.floor(rows/2)}];
+dx=0; dy=0; score=0;
+paused=false;
+
+document.getElementById("score").innerText="Score: 0";
+document.getElementById("game-over-overlay").style.display="none";
+
+placeFood();
+draw();
 }
 
-function playEatSound() {
-  if (masterSound && effectsEnabled) eatSound.play();
+/* FOOD */
+function placeFood(){
+food={x:Math.floor(Math.random()*cols),y:Math.floor(Math.random()*rows)};
 }
 
-function playGameOverSound() {
-  if (masterSound && effectsEnabled) gameOverSound.play();
+/* GRID */
+function drawGrid(){
+ctx.strokeStyle="#333";
+for(let x=0;x<cols;x++){
+for(let y=0;y<rows;y++){
+ctx.strokeRect(x*scale,y*scale,scale,scale);
+}}
 }
 
-function updateBGM() {
-  if (masterSound && bgmEnabled) bgm.play();
-  else bgm.pause();
+/* DRAW */
+function draw(){
+ctx.clearRect(0,0,400,400);
+drawGrid();
+
+ctx.fillStyle="red";
+ctx.fillRect(food.x*scale,food.y*scale,scale,scale);
+
+snake.forEach((p,i)=>{
+ctx.fillStyle=i==0?"green":"lime";
+ctx.fillRect(p.x*scale,p.y*scale,scale,scale);
+});
 }
 
-/* MODAL UI LOGIC */
-const soundModal = document.getElementById("soundModal");
-const soundBtn   = document.getElementById("soundSettingsBtn");
-const closeModal = document.getElementById("closeModal");
+/* UPDATE */
+function update(){
 
-const masterToggle  = document.getElementById("masterSoundToggle");
-const effectsToggle = document.getElementById("effectsToggle");
-const bgmToggle     = document.getElementById("bgmToggle");
+if(paused) return;
 
-soundBtn.onclick = () => soundModal.style.display = "block";
-closeModal.onclick = () => soundModal.style.display = "none";
-window.onclick = (e) => {
-  if (e.target === soundModal) soundModal.style.display = "none";
+savedState={
+snake:JSON.parse(JSON.stringify(snake)),
+food:{...food},
+dx,dy,score,
+speed:Number(document.getElementById("speed").value)
 };
 
-masterToggle.onchange = () => {
-  masterSound = masterToggle.checked;
-  updateSoundSettings();
-  updateBGM();
+if(dx==0&&dy==0) return;
+
+let head={x:snake[0].x+dx,y:snake[0].y+dy};
+
+if(head.x<0||head.x>=cols||head.y<0||head.y>=rows) return gameOver();
+if(snake.slice(1).some(p=>p.x==head.x&&p.y==head.y)) return gameOver();
+
+snake.unshift(head);
+
+if(head.x==food.x&&head.y==food.y){
+score++;
+
+if(score%10==0) eat10Sound.play();
+else eatSound.play();
+
+document.getElementById("score").innerText="Score: "+score;
+
+if(score>=cols*rows-1) return winGame();
+
+placeFood();
+}else{
+snake.pop();
+}
+
+draw();
+}
+
+/* GAME OVER */
+function gameOver(){
+clearInterval(gameInterval);
+gameOverSound.play();
+
+document.getElementById("game-over-overlay").innerText="GAME OVER";
+document.getElementById("game-over-overlay").style.display="block";
+
+if(continuesUsed<maxContinues){
+document.getElementById("continueText").innerText=
+"Continues left: "+(maxContinues-continuesUsed);
+document.getElementById("continueModal").style.display="block";
+}
+}
+
+/* CONTINUE */
+function continueGame(){
+snake=JSON.parse(JSON.stringify(savedState.snake));
+food={...savedState.food};
+dx=savedState.dx;
+dy=savedState.dy;
+score=savedState.score;
+
+document.getElementById("score").innerText="Score: "+score;
+
+document.getElementById("continueModal").style.display="none";
+document.getElementById("game-over-overlay").style.display="none";
+
+paused=true;
+
+gameInterval=setInterval(update,savedState.speed);
+}
+
+document.getElementById("watchAd").onclick=()=>{
+setTimeout(()=>{
+continuesUsed++;
+continueGame();
+},1000);
 };
-effectsToggle.onchange = () => {
-  effectsEnabled = effectsToggle.checked;
-  updateSoundSettings();
+
+document.getElementById("useKey").onclick=()=>{
+if(playerKeys>0){
+playerKeys--;
+continuesUsed++;
+continueGame();
+}
 };
-bgmToggle.onchange = () => {
-  bgmEnabled = bgmToggle.checked;
-  updateSoundSettings();
-  updateBGM();
+
+document.getElementById("buyKey").onclick=()=>{
+playerKeys+=5;
 };
 
-/* GAME LOGIC */
-let canvas, ctx;
-let scale, rows, cols;
-let snake, food, dx, dy;
-let gameInterval = null;
-let score = 0;
-let boardSize = 20;
+document.getElementById("endGame").onclick=()=>{
+document.getElementById("continueModal").style.display="none";
+};
 
-/* FIX 1: direction lock */
-let nextDirection = null;
-let directionLocked = false;
+/* WIN */
+function winGame(){
+clearInterval(gameInterval);
+winSound.play();
 
-function setupGame() {
-  canvas = document.getElementById('game');
-  ctx = canvas.getContext('2d');
-
-  boardSize = Number(document.getElementById('board').value);
-  scale = 400 / boardSize;
-  rows = cols = boardSize;
-
-  snake = [{ x: Math.floor(cols / 2), y: Math.floor(rows / 2) }];
-  dx = 0;
-  dy = 0;
-  score = 0;
-
-  document.getElementById('score').innerText = "Score: 0";
-  document.getElementById('game-over-overlay').style.display = "none";
-
-  placeFood();
-  draw();
+document.getElementById("game-over-overlay").innerText="🎉 YOU WIN 🎉";
+document.getElementById("game-over-overlay").style.display="block";
 }
 
-function placeFood() {
-  food = {
-    x: Math.floor(Math.random() * cols),
-    y: Math.floor(Math.random() * rows)
-  };
-}
+/* CONTROLS */
+window.addEventListener("keydown",(e)=>{
+if(e.key==" "){paused=!paused; return;}
 
-function drawGrid() {
-  ctx.strokeStyle = "#333";
-  for (let x = 0; x < cols; x++) {
-    for (let y = 0; y < rows; y++) {
-      ctx.strokeRect(x * scale, y * scale, scale, scale);
-    }
-  }
-}
-
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawGrid();
-
-  ctx.fillStyle = "red";
-  ctx.fillRect(food.x * scale, food.y * scale, scale, scale);
-
-  snake.forEach((part, i) => {
-    ctx.fillStyle = (i === 0) ? "green" : "lime";
-    ctx.fillRect(part.x * scale, part.y * scale, scale, scale);
-  });
-}
-
-function update() {
-
-  /* FIX 2: apply direction change ONCE per frame */
-  if (nextDirection) {
-    dx = nextDirection.dx;
-    dy = nextDirection.dy;
-    nextDirection = null;
-  }
-  directionLocked = false;
-
-  if (dx === 0 && dy === 0) { draw(); return; }
-
-  const head = { x: snake[0].x + dx, y: snake[0].y + dy };
-
-  /* WALL COLLISION */
-  if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows)
-    return gameOver();
-
-  /* SELF COLLISION (corrected: ignore the current head) */
-  if (snake.slice(1).some(p => p.x === head.x && p.y === head.y))
-    return gameOver();
-
-  snake.unshift(head);
-
-  if (head.x === food.x && head.y === food.y) {
-    playEatSound();
-    score++;
-    document.getElementById('score').innerText = "Score: " + score;
-
-    if (score >= cols * rows - 1) return winGame();
-
-    placeFood();
-  } else {
-    snake.pop();
-  }
-
-  draw();
-}
-
-function gameOver() {
-  clearInterval(gameInterval);
-  document.getElementById('restart').style.display = "block";
-  playGameOverSound();
-  document.getElementById('game-over-overlay').innerText = "GAME OVER";
-  document.getElementById('game-over-overlay').style.display = "block";
-}
-
-function winGame() {
-  clearInterval(gameInterval);
-  document.getElementById('restart').style.display = "block";
-  document.getElementById('game-over-overlay').innerText = "YOU WIN!";
-  document.getElementById('game-over-overlay').style.display = "block";
-}
-
-window.addEventListener('keydown', (e) => {
-  if (directionLocked) return;
-
-  let newDx = dx;
-  let newDy = dy;
-
-  if (e.key === "ArrowUp" && dy !== 1)    { newDx = 0; newDy = -1; }
-  if (e.key === "ArrowDown" && dy !== -1) { newDx = 0; newDy = 1; }
-  if (e.key === "ArrowLeft" && dx !== 1)  { newDx = -1; newDy = 0; }
-  if (e.key === "ArrowRight" && dx !== -1){ newDx = 1; newDy = 0; }
-
-  nextDirection = { dx: newDx, dy: newDy };
-  directionLocked = true;
+if(e.key=="ArrowUp"&&dy!=1){dx=0;dy=-1;}
+if(e.key=="ArrowDown"&&dy!=-1){dx=0;dy=1;}
+if(e.key=="ArrowLeft"&&dx!=1){dx=-1;dy=0;}
+if(e.key=="ArrowRight"&&dx!=-1){dx=1;dy=0;}
 });
 
-document.getElementById('start').onclick = () => {
-  clearInterval(gameInterval);
-  setupGame();
-  const speed = Number(document.getElementById('speed').value);
-  gameInterval = setInterval(update, speed);
-  document.getElementById('restart').style.display = "none";
-  updateBGM();
+/* BUTTONS */
+document.getElementById("pauseBtn").onclick=()=>paused=!paused;
+
+document.getElementById("start").onclick=()=>{
+clearInterval(gameInterval);
+setupGame();
+let speed=Number(document.getElementById("speed").value);
+gameInterval=setInterval(update,speed);
+bgm.play();
 };
 
-document.getElementById('restart').onclick = () => {
-  clearInterval(gameInterval);
-  setupGame();
-  const speed = Number(document.getElementById('speed').value);
-  gameInterval = setInterval(update, speed);
-  document.getElementById('restart').style.display = "none";
+document.getElementById("howBtn").onclick=()=>{
+document.getElementById("howModal").style.display="block";
 };
+
+function closeHow(){
+document.getElementById("howModal").style.display="none";
+}
+
 </script>
-
 </body>
 </html>
