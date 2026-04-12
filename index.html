@@ -303,7 +303,7 @@
 
         <strong>Continue:</strong><br>
         A continue takes you back to the game state from before the last red dot was eaten.<br>
-        Then the game shows a 3 second countdown and resumes automatically with a new random red dot.
+        Then the game shows a 3 second countdown and resumes automatically from that exact same state.
       </p>
 
       <button id="closeHowToPlayBtn" class="close-btn">Close</button>
@@ -687,8 +687,6 @@ function continueGameFromCheckpoint() {
   gameInterval = null;
 
   restoreState(checkpointState);
-
-  placeFood();
 
   isWin = false;
   isGameOver = false;
