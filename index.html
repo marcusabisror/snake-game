@@ -210,17 +210,16 @@
   <div id="controls">
     <label>Speed:</label>
     <select id="speed">
-      <option value="300">Beginner</option>
-      <option value="200" selected>Moderate</option>
-      <option value="120">Pro</option>
+      <option value="300">Slow</option>
+      <option value="200" selected>Regular</option>
     </select>
 
     <label>Board Size:</label>
     <select id="board">
-      <option value="18" selected>18×18</option>
-      <option value="15">15×15</option>
+      <option value="16" selected>16×16</option>
+      <option value="14">14×14</option>
       <option value="10">10×10</option>
-      <option value="7">7×7</option>
+      <option value="8">8×8</option>
       <option value="4">4x4 (Practice)</option>
     </select>
 
@@ -476,6 +475,7 @@ let continuesUsed = 0;
 let redosUsed = 0;
 let maxContinues = 0;
 let maxRedos = 0;
+let historyCursor = 0;
 let playerKeys = 0;
 let redoSincePauseOpened = false;
 let stagedRedoFromGameOver = false;
@@ -486,9 +486,9 @@ function updateKeysDisplay() {
 
 function getMaxContinues(size) {
   if (size === 4) return 1;
-  if (size === 7) return 1;
+  if (size === 8) return 1;
   if (size === 10) return 2;
-  if (size === 15) return 3;
+  if (size === 14) return 3;
   return 4;
 }
 
@@ -549,6 +549,7 @@ function setupGame() {
 
   placeFood();
   eatHistory = [cloneState()];
+  historyCursor = 0;
   redosUsed = 0;
   maxRedos = maxContinues;
 
@@ -660,7 +661,9 @@ function update() {
   snake.unshift(head);
 
   if (food && head.x === food.x && head.y === food.y) {
+    eatHistory = eatHistory.slice(0, historyCursor + 1);
     eatHistory.push(oldState);
+    historyCursor = eatHistory.length - 1;
 
     score++;
     document.getElementById("score").innerText = "Score: " + score;
@@ -742,8 +745,8 @@ function startCountdownThenResume(speed) {
 }
 
 function getLatestCheckpoint() {
-  if (!eatHistory.length) return null;
-  return eatHistory[eatHistory.length - 1];
+  if (!eatHistory.length || historyCursor < 0) return null;
+  return eatHistory[historyCursor];
 }
 
 function continueGameFromCheckpoint() {
@@ -877,9 +880,9 @@ document.getElementById("pauseBtn").onclick = () => {
 
 function redoToPreviousEat() {
   if (!paused || isGameOver || isWin || inCountdown) return;
-  if (eatHistory.length <= 1) return;
+  if (historyCursor <= 0) return;
 
-  eatHistory.pop();
+  historyCursor--;
   const target = getLatestCheckpoint();
   if (!target) return;
 
@@ -891,9 +894,9 @@ function redoToPreviousEat() {
 
 function redoFromGameOver() {
   if (!isGameOver || isWin || inCountdown) return;
-  if (eatHistory.length <= 1) return;
+  if (historyCursor <= 0) return;
 
-  eatHistory.pop();
+  historyCursor--;
   const target = getLatestCheckpoint();
   if (!target) return;
 
@@ -953,7 +956,7 @@ document.getElementById("resumeFromModalBtn").onclick = () => {
 };
 
 document.getElementById("redoAdBtn").onclick = () => {
-  if (eatHistory.length <= 1) return;
+  if (historyCursor <= 0) return;
   const remaining = maxRedos - redosUsed;
   if (remaining <= 0) return;
 
@@ -964,7 +967,7 @@ document.getElementById("redoAdBtn").onclick = () => {
 };
 
 document.getElementById("redoKeyBtn").onclick = () => {
-  if (eatHistory.length <= 1) return;
+  if (historyCursor <= 0) return;
   if (playerKeys <= 0) return;
   playerKeys--;
   updateKeysDisplay();
@@ -972,7 +975,7 @@ document.getElementById("redoKeyBtn").onclick = () => {
 };
 
 document.getElementById("redoFromGameOverAdBtn").onclick = () => {
-  if (eatHistory.length <= 1) return;
+  if (historyCursor <= 0) return;
   const remaining = maxRedos - redosUsed;
   if (remaining <= 0) return;
 
@@ -983,7 +986,7 @@ document.getElementById("redoFromGameOverAdBtn").onclick = () => {
 };
 
 document.getElementById("redoFromGameOverKeyBtn").onclick = () => {
-  if (eatHistory.length <= 1) return;
+  if (historyCursor <= 0) return;
   if (playerKeys <= 0) return;
   playerKeys--;
   updateKeysDisplay();
