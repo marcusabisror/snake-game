@@ -285,6 +285,8 @@
 
       <button id="watchAdBtn" class="modal-btn primary">Continue Watch Ad</button><br>
       <button id="useKeyBtn" class="modal-btn secondary">Use Key</button><br>
+      <button id="redoFromGameOverAdBtn" class="modal-btn secondary">↶ Redo Watch Ad</button><br>
+      <button id="redoFromGameOverKeyBtn" class="modal-btn secondary">↶ Redo Use Key</button><br>
       <button id="continueAfterRedoBtn" class="modal-btn primary" style="display:none;">Continue</button><br>
       <button id="buyKeyBtn" class="modal-btn warning">Buy Keys</button><br>
       <button id="endGameBtn" class="modal-btn danger">End Game</button>
@@ -702,8 +704,6 @@ function gameOver() {
   const remaining = maxContinues - continuesUsed;
   document.getElementById("continueText").innerText =
     `Go back to before the last red dot. Ad continues left: ${Math.max(remaining, 0)}. Keys are always available.`;
-  document.getElementById("watchAdBtn").innerText = "Continue Watch Ad";
-  document.getElementById("useKeyBtn").innerText = "Use Key";
   document.getElementById("continueAfterRedoBtn").style.display = "none";
   document.getElementById("continueAfterPauseRedoBtn").style.display = "none";
   pendingRedoCount = 0;
@@ -912,19 +912,6 @@ function redoToPreviousEat() {
 
 
 document.getElementById("watchAdBtn").onclick = () => {
-  if (continueModal.style.display === "block") {
-    if (eatHistory.length <= 1) return;
-    const remainingRedo = maxRedos - redosUsed;
-    if (remainingRedo <= 0) return;
-    simulateRewardedAd(() => {
-      redosUsed++;
-      document.getElementById("watchAdBtn").innerText = "↶ Redo Watch Ad";
-      document.getElementById("useKeyBtn").innerText = "↶ Redo Use Key";
-      redoToPreviousEat();
-    });
-    return;
-  }
-
   const remaining = maxContinues - continuesUsed;
   if (remaining <= 0) return;
 
@@ -935,21 +922,29 @@ document.getElementById("watchAdBtn").onclick = () => {
 };
 
 document.getElementById("useKeyBtn").onclick = () => {
-  if (continueModal.style.display === "block") {
-    if (eatHistory.length <= 1) return;
-    if (playerKeys <= 0) return;
-    playerKeys--;
-    updateKeysDisplay();
-    document.getElementById("watchAdBtn").innerText = "↶ Redo Watch Ad";
-    document.getElementById("useKeyBtn").innerText = "↶ Redo Use Key";
-    redoToPreviousEat();
-    return;
-  }
-
   if (playerKeys <= 0) return;
   playerKeys--;
   updateKeysDisplay();
   continueGameFromCheckpoint();
+};
+
+document.getElementById("redoFromGameOverAdBtn").onclick = () => {
+  if (eatHistory.length <= 1) return;
+  const remainingRedo = maxRedos - redosUsed;
+  if (remainingRedo <= 0) return;
+
+  simulateRewardedAd(() => {
+    redosUsed++;
+    redoToPreviousEat();
+  });
+};
+
+document.getElementById("redoFromGameOverKeyBtn").onclick = () => {
+  if (eatHistory.length <= 1) return;
+  if (playerKeys <= 0) return;
+  playerKeys--;
+  updateKeysDisplay();
+  redoToPreviousEat();
 };
 
 document.getElementById("buyKeyBtn").onclick = () => {
