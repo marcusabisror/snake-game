@@ -606,7 +606,9 @@ function updateRedoText() {
   const remaining = maxRedos - redosUsed;
   document.getElementById("redoText").innerText =
     `Redo takes you back to before the last red dot was eaten. Ad redos left: ${Math.max(remaining, 0)}. Keys can also be used for redo.`;
+}
 
+function updateContinueRedoStatusText() {
   const resumeText = pendingRedoCount > 0
     ? `Continue when ready (${pendingRedoCount} redo${pendingRedoCount === 1 ? "" : "s"} selected).`
     : "Redo can be used multiple times before continuing.";
@@ -636,6 +638,7 @@ function resetRedoSelectionState() {
   pendingRedoCount = 0;
   refreshRedoActionButtons();
   updateRedoText();
+  updateContinueRedoStatusText();
 }
 
 function setPaused(value) {
@@ -645,6 +648,7 @@ function setPaused(value) {
 
   if (paused && !isGameOver && !isWin && !inCountdown && gameInterval) {
     updateRedoText();
+    updateContinueRedoStatusText();
     refreshRedoActionButtons();
     pauseModal.style.display = "block";
   } else {
@@ -725,9 +729,9 @@ function gameOver() {
   document.getElementById("game-over-overlay").style.display = "block";
 
   const remaining = maxContinues - continuesUsed;
+  resetRedoSelectionState();
   document.getElementById("continueText").innerText =
     `Go back to before the last red dot. Ad continues left: ${Math.max(remaining, 0)}. Keys are always available.`;
-  resetRedoSelectionState();
 
   continueModal.style.display = "block";
 }
@@ -932,6 +936,7 @@ function redoToPreviousEat() {
   pendingRedoCount++;
   refreshRedoActionButtons();
   updateRedoText();
+  updateContinueRedoStatusText();
 }
 
 
@@ -969,18 +974,21 @@ document.getElementById("redoFromGameOverKeyBtn").onclick = () => {
   playerKeys--;
   updateKeysDisplay();
   redoToPreviousEat();
+  updateContinueRedoStatusText();
 };
 
 document.getElementById("buyKeyBtn").onclick = () => {
   playerKeys += 5;
   updateKeysDisplay();
   updateRedoText();
+  refreshRedoActionButtons();
 };
 
 document.getElementById("buyKeysHomeBtn").onclick = () => {
   playerKeys += 5;
   updateKeysDisplay();
   updateRedoText();
+  refreshRedoActionButtons();
 };
 
 document.getElementById("endGameBtn").onclick = () => {
@@ -1009,12 +1017,14 @@ document.getElementById("redoKeyBtn").onclick = () => {
   playerKeys--;
   updateKeysDisplay();
   redoToPreviousEat();
+  updateContinueRedoStatusText();
 };
 
 document.getElementById("buyRedoBtn").onclick = () => {
   playerKeys += 5;
   updateKeysDisplay();
   updateRedoText();
+  refreshRedoActionButtons();
 };
 
 document.getElementById("continueAfterRedoBtn").onclick = () => {
