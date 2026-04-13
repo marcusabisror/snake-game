@@ -77,6 +77,12 @@
       box-shadow: 0 0 20px rgba(0,0,0,0.5);
     }
 
+    #howToPlayModal .modal-content {
+      max-height: 75vh;
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+    }
+
     .toggle-row {
       display: flex;
       justify-content: space-between;
@@ -274,13 +280,27 @@
 
   <div id="continueModal" class="modal">
     <div class="modal-content">
-      <h2>Continue?</h2>
-      <p id="continueText">Go back to before your last food.</p>
+      <h2>Continue / Redo?</h2>
+      <p id="continueText">Redo can be used multiple times before continuing.</p>
 
       <button id="watchAdBtn" class="modal-btn primary">Continue Watch Ad</button><br>
       <button id="useKeyBtn" class="modal-btn secondary">Use Key</button><br>
+      <button id="continueAfterRedoBtn" class="modal-btn primary" style="display:none;">Continue</button><br>
       <button id="buyKeyBtn" class="modal-btn warning">Buy Keys</button><br>
       <button id="endGameBtn" class="modal-btn danger">End Game</button>
+    </div>
+  </div>
+
+  <div id="pauseModal" class="modal">
+    <div class="modal-content">
+      <h2>Paused</h2>
+      <p id="redoText">Redo takes you back to before the last red dot was eaten.</p>
+
+      <button id="resumeFromModalBtn" class="modal-btn primary">Resume</button><br>
+      <button id="redoAdBtn" class="modal-btn secondary">↶ Redo Watch Ad</button><br>
+      <button id="redoKeyBtn" class="modal-btn secondary">↶ Redo Use Key</button><br>
+      <button id="continueAfterPauseRedoBtn" class="modal-btn primary" style="display:none;">Continue</button><br>
+      <button id="buyRedoBtn" class="modal-btn warning">Buy Keys (Continue + Redo)</button>
     </div>
   </div>
 
@@ -303,7 +323,16 @@
 
         <strong>Continue:</strong><br>
         A continue takes you back to the game state from before the last red dot was eaten.<br>
-        Then the game shows a 3 second countdown and resumes automatically from that exact same state.
+        Then the game shows a 3 second countdown and resumes automatically from that exact same state.<br>
+        Continue can be used by watching an ad, or by spending a key.<br><br>
+
+        <strong>Redo (from Pause popup):</strong><br>
+        Press Pause (or Space bar) to open the pause popup, then press the ↶ Redo button.<br>
+        Redo also returns to the state from before the last red dot was eaten, with the red dot back in the same place.<br>
+        You can press redo repeatedly to go back eat-by-eat until your first eat of the game.<br>
+        Ad redos per game are the same count as ad continues for that board size.<br>
+        Keys are shared power: the same keys can be used for both Continue and Redo.<br>
+        You can buy keys anytime, and buying keys gives more uses for both Continue and Redo.
       </p>
 
       <button id="closeHowToPlayBtn" class="close-btn">Close</button>
@@ -382,6 +411,7 @@ function updateBGM() {
 const soundModal = document.getElementById("soundModal");
 const continueModal = document.getElementById("continueModal");
 const howToPlayModal = document.getElementById("howToPlayModal");
+const pauseModal = document.getElementById("pauseModal");
 
 const soundBtn = document.getElementById("soundSettingsBtn");
 const closeModal = document.getElementById("closeModal");
@@ -403,6 +433,7 @@ document.getElementById("closeHowToPlayBtn").onclick = () => {
 window.onclick = (e) => {
   if (e.target === soundModal) soundModal.style.display = "none";
   if (e.target === howToPlayModal) howToPlayModal.style.display = "none";
+  if (e.target === pauseModal) pauseModal.style.display = "none";
 };
 
 masterToggle.onchange = () => {
@@ -439,10 +470,13 @@ let isWin = false;
 let inCountdown = false;
 
 /* CONTINUE / KEYS */
-let checkpointState = null;
+let eatHistory = [];
 let continuesUsed = 0;
+let redosUsed = 0;
 let maxContinues = 0;
+let maxRedos = 0;
 let playerKeys = 0;
+let pendingRedoCount = 0;
 
 function updateKeysDisplay() {
   document.getElementById("keysDisplay").innerText = "Keys: " + playerKeys;
@@ -509,9 +543,15 @@ function setupGame() {
   document.getElementById("pause-overlay").style.display = "none";
   document.getElementById("countdown-overlay").style.display = "none";
   continueModal.style.display = "none";
+  pauseModal.style.display = "none";
+  document.getElementById("continueAfterRedoBtn").style.display = "none";
+  document.getElementById("continueAfterPauseRedoBtn").style.display = "none";
+  pendingRedoCount = 0;
 
   placeFood();
-  checkpointState = cloneState();
+  eatHistory = [cloneState()];
+  redosUsed = 0;
+  maxRedos = maxContinues;
 
   draw();
   updateKeysDisplay();
@@ -562,10 +602,29 @@ function draw() {
   });
 }
 
+function updateRedoText() {
+  const remaining = maxRedos - redosUsed;
+  document.getElementById("redoText").innerText =
+    `Redo takes you back to before the last red dot was eaten. Ad redos left: ${Math.max(remaining, 0)}. Keys can also be used for redo.`;
+
+  const resumeText = pendingRedoCount > 0
+    ? `Continue when ready (${pendingRedoCount} redo${pendingRedoCount === 1 ? "" : "s"} selected).`
+    : "Redo can be used multiple times before continuing.";
+  document.getElementById("continueText").innerText = resumeText;
+}
+
 function setPaused(value) {
   paused = value;
   document.getElementById("pause-overlay").style.display = paused ? "block" : "none";
   document.getElementById("pauseBtn").innerText = paused ? "Resume" : "Pause";
+
+  if (paused && !isGameOver && !isWin && !inCountdown && gameInterval) {
+    updateRedoText();
+    document.getElementById("continueAfterPauseRedoBtn").style.display = pendingRedoCount > 0 ? "inline-block" : "none";
+    pauseModal.style.display = "block";
+  } else {
+    pauseModal.style.display = "none";
+  }
 }
 
 function update() {
@@ -602,7 +661,7 @@ function update() {
   snake.unshift(head);
 
   if (food && head.x === food.x && head.y === food.y) {
-    checkpointState = oldState;
+    eatHistory.push(oldState);
 
     score++;
     document.getElementById("score").innerText = "Score: " + score;
@@ -633,6 +692,7 @@ function gameOver() {
   isGameOver = true;
   isGameRunning = false;
   setPaused(false);
+  pauseModal.style.display = "none";
 
   document.getElementById("restart").style.display = "block";
   playGameOverSound();
@@ -642,6 +702,11 @@ function gameOver() {
   const remaining = maxContinues - continuesUsed;
   document.getElementById("continueText").innerText =
     `Go back to before the last red dot. Ad continues left: ${Math.max(remaining, 0)}. Keys are always available.`;
+  document.getElementById("watchAdBtn").innerText = "Continue Watch Ad";
+  document.getElementById("useKeyBtn").innerText = "Use Key";
+  document.getElementById("continueAfterRedoBtn").style.display = "none";
+  document.getElementById("continueAfterPauseRedoBtn").style.display = "none";
+  pendingRedoCount = 0;
 
   continueModal.style.display = "block";
 }
@@ -678,7 +743,13 @@ function startCountdownThenResume(speed) {
   }, 1000);
 }
 
+function getLatestCheckpoint() {
+  if (!eatHistory.length) return null;
+  return eatHistory[eatHistory.length - 1];
+}
+
 function continueGameFromCheckpoint() {
+  const checkpointState = getLatestCheckpoint();
   if (!checkpointState) return;
 
   const speed = Number(document.getElementById("speed").value);
@@ -695,9 +766,28 @@ function continueGameFromCheckpoint() {
   document.getElementById("score").innerText = "Score: " + score;
   document.getElementById("game-over-overlay").style.display = "none";
   continueModal.style.display = "none";
+  pauseModal.style.display = "none";
 
   draw();
   startCountdownThenResume(speed);
+}
+
+function continueAfterRedoSelection() {
+  const speed = Number(document.getElementById("speed").value);
+  document.getElementById("continueAfterRedoBtn").style.display = "none";
+  document.getElementById("continueAfterPauseRedoBtn").style.display = "none";
+  if (isGameOver) {
+    continueModal.style.display = "none";
+    startCountdownThenResume(speed);
+    pendingRedoCount = 0;
+    updateRedoText();
+    return;
+  }
+
+  setPaused(false);
+  startCountdownThenResume(speed);
+  pendingRedoCount = 0;
+  updateRedoText();
 }
 
 function winGame() {
@@ -708,6 +798,7 @@ function winGame() {
   isWin = true;
   isGameRunning = false;
   setPaused(false);
+  pauseModal.style.display = "none";
 
   document.getElementById("restart").style.display = "block";
   document.getElementById("game-over-overlay").innerText = "🎉 GAME WIN 🎉";
@@ -800,7 +891,40 @@ document.getElementById("pauseBtn").onclick = () => {
   setPaused(!paused);
 };
 
+function redoToPreviousEat() {
+  const inContinueFlow = continueModal.style.display === "block";
+  if ((!paused && !inContinueFlow) || isWin || inCountdown) return;
+  if (eatHistory.length <= 1) return;
+
+  eatHistory.pop();
+  const target = getLatestCheckpoint();
+  if (!target) return;
+
+  restoreState(target);
+  isGameRunning = false;
+  document.getElementById("game-over-overlay").style.display = "none";
+  draw();
+  pendingRedoCount++;
+  document.getElementById("continueAfterRedoBtn").style.display = "inline-block";
+  document.getElementById("continueAfterPauseRedoBtn").style.display = "inline-block";
+  updateRedoText();
+}
+
+
 document.getElementById("watchAdBtn").onclick = () => {
+  if (continueModal.style.display === "block") {
+    if (eatHistory.length <= 1) return;
+    const remainingRedo = maxRedos - redosUsed;
+    if (remainingRedo <= 0) return;
+    simulateRewardedAd(() => {
+      redosUsed++;
+      document.getElementById("watchAdBtn").innerText = "↶ Redo Watch Ad";
+      document.getElementById("useKeyBtn").innerText = "↶ Redo Use Key";
+      redoToPreviousEat();
+    });
+    return;
+  }
+
   const remaining = maxContinues - continuesUsed;
   if (remaining <= 0) return;
 
@@ -811,6 +935,17 @@ document.getElementById("watchAdBtn").onclick = () => {
 };
 
 document.getElementById("useKeyBtn").onclick = () => {
+  if (continueModal.style.display === "block") {
+    if (eatHistory.length <= 1) return;
+    if (playerKeys <= 0) return;
+    playerKeys--;
+    updateKeysDisplay();
+    document.getElementById("watchAdBtn").innerText = "↶ Redo Watch Ad";
+    document.getElementById("useKeyBtn").innerText = "↶ Redo Use Key";
+    redoToPreviousEat();
+    return;
+  }
+
   if (playerKeys <= 0) return;
   playerKeys--;
   updateKeysDisplay();
@@ -820,15 +955,58 @@ document.getElementById("useKeyBtn").onclick = () => {
 document.getElementById("buyKeyBtn").onclick = () => {
   playerKeys += 5;
   updateKeysDisplay();
+  updateRedoText();
 };
 
 document.getElementById("buyKeysHomeBtn").onclick = () => {
   playerKeys += 5;
   updateKeysDisplay();
+  updateRedoText();
 };
 
 document.getElementById("endGameBtn").onclick = () => {
   continueModal.style.display = "none";
+};
+
+document.getElementById("resumeFromModalBtn").onclick = () => {
+  if (pendingRedoCount > 0) {
+    continueAfterRedoSelection();
+    return;
+  }
+  setPaused(false);
+};
+
+document.getElementById("redoAdBtn").onclick = () => {
+  if (eatHistory.length <= 1) return;
+  const remaining = maxRedos - redosUsed;
+  if (remaining <= 0) return;
+
+  simulateRewardedAd(() => {
+    redosUsed++;
+    redoToPreviousEat();
+  });
+};
+
+document.getElementById("redoKeyBtn").onclick = () => {
+  if (eatHistory.length <= 1) return;
+  if (playerKeys <= 0) return;
+  playerKeys--;
+  updateKeysDisplay();
+  redoToPreviousEat();
+};
+
+document.getElementById("buyRedoBtn").onclick = () => {
+  playerKeys += 5;
+  updateKeysDisplay();
+  updateRedoText();
+};
+
+document.getElementById("continueAfterRedoBtn").onclick = () => {
+  continueAfterRedoSelection();
+};
+
+document.getElementById("continueAfterPauseRedoBtn").onclick = () => {
+  continueAfterRedoSelection();
 };
 
 /* INITIAL */
