@@ -285,6 +285,9 @@
 
       <button id="watchAdBtn" class="modal-btn primary">Continue Watch Ad</button><br>
       <button id="useKeyBtn" class="modal-btn secondary">Use Key</button><br>
+      <button id="redoFromGameOverAdBtn" class="modal-btn secondary">↶ Redo Watch Ad</button><br>
+      <button id="redoFromGameOverKeyBtn" class="modal-btn secondary">↶ Redo Use Key</button><br>
+      <button id="continueAfterRedoBtn" class="modal-btn primary" style="display:none;">Continue</button><br>
       <button id="buyKeyBtn" class="modal-btn warning">Buy Keys</button><br>
       <button id="endGameBtn" class="modal-btn danger">End Game</button>
     </div>
@@ -474,6 +477,8 @@ let redosUsed = 0;
 let maxContinues = 0;
 let maxRedos = 0;
 let playerKeys = 0;
+let redoSincePauseOpened = false;
+let stagedRedoFromGameOver = false;
 
 function updateKeysDisplay() {
   document.getElementById("keysDisplay").innerText = "Keys: " + playerKeys;
@@ -608,11 +613,17 @@ function setPaused(value) {
   document.getElementById("pauseBtn").innerText = paused ? "Resume" : "Pause";
 
   if (paused && !isGameOver && !isWin && !inCountdown && gameInterval) {
+    redoSincePauseOpened = false;
     updateRedoText();
     pauseModal.style.display = "block";
   } else {
     pauseModal.style.display = "none";
   }
+}
+
+function resumeGameplayFromCurrentState() {
+  const speed = Number(document.getElementById("speed").value);
+  startCountdownThenResume(speed);
 }
 
 function update() {
@@ -688,8 +699,12 @@ function gameOver() {
   document.getElementById("game-over-overlay").style.display = "block";
 
   const remaining = maxContinues - continuesUsed;
+  const redoRemaining = maxRedos - redosUsed;
   document.getElementById("continueText").innerText =
-    `Go back to before the last red dot. Ad continues left: ${Math.max(remaining, 0)}. Keys are always available.`;
+    `Go back to before the last red dot. Ad continues left: ${Math.max(remaining, 0)}. Ad redos left: ${Math.max(redoRemaining, 0)}.`;
+
+  stagedRedoFromGameOver = false;
+  document.getElementById("continueAfterRedoBtn").style.display = "none";
 
   continueModal.style.display = "block";
 }
@@ -810,7 +825,11 @@ window.addEventListener("keydown", (e) => {
   if (e.key === " ") {
     e.preventDefault();
     if (!isGameOver && !isWin && !inCountdown && gameInterval) {
-      setPaused(!paused);
+      if (paused && redoSincePauseOpened) {
+        resumeGameplayFromCurrentState();
+      } else {
+        setPaused(!paused);
+      }
     }
     return;
   }
@@ -865,8 +884,30 @@ function redoToPreviousEat() {
   if (!target) return;
 
   restoreState(target);
+  redoSincePauseOpened = true;
   draw();
   updateRedoText();
+}
+
+function redoFromGameOver() {
+  if (!isGameOver || isWin || inCountdown) return;
+  if (eatHistory.length <= 1) return;
+
+  eatHistory.pop();
+  const target = getLatestCheckpoint();
+  if (!target) return;
+
+  restoreState(target);
+  stagedRedoFromGameOver = true;
+  document.getElementById("game-over-overlay").style.display = "none";
+  document.getElementById("continueAfterRedoBtn").style.display = "inline-block";
+
+  const remaining = maxContinues - continuesUsed;
+  const redoRemaining = maxRedos - redosUsed;
+  document.getElementById("continueText").innerText =
+    `Redo applied. You can use redo again or press Continue. Ad continues left: ${Math.max(remaining, 0)}. Ad redos left: ${Math.max(redoRemaining, 0)}.`;
+
+  draw();
 }
 
 
@@ -904,6 +945,10 @@ document.getElementById("endGameBtn").onclick = () => {
 };
 
 document.getElementById("resumeFromModalBtn").onclick = () => {
+  if (redoSincePauseOpened) {
+    resumeGameplayFromCurrentState();
+    return;
+  }
   setPaused(false);
 };
 
@@ -924,6 +969,32 @@ document.getElementById("redoKeyBtn").onclick = () => {
   playerKeys--;
   updateKeysDisplay();
   redoToPreviousEat();
+};
+
+document.getElementById("redoFromGameOverAdBtn").onclick = () => {
+  if (eatHistory.length <= 1) return;
+  const remaining = maxRedos - redosUsed;
+  if (remaining <= 0) return;
+
+  simulateRewardedAd(() => {
+    redosUsed++;
+    redoFromGameOver();
+  });
+};
+
+document.getElementById("redoFromGameOverKeyBtn").onclick = () => {
+  if (eatHistory.length <= 1) return;
+  if (playerKeys <= 0) return;
+  playerKeys--;
+  updateKeysDisplay();
+  redoFromGameOver();
+};
+
+document.getElementById("continueAfterRedoBtn").onclick = () => {
+  if (!stagedRedoFromGameOver) return;
+  continueModal.style.display = "none";
+  stagedRedoFromGameOver = false;
+  resumeGameplayFromCurrentState();
 };
 
 document.getElementById("buyRedoBtn").onclick = () => {
