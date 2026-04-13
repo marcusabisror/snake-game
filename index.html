@@ -545,13 +545,13 @@ function setupGame() {
   document.getElementById("countdown-overlay").style.display = "none";
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
-  pendingRedoCount = 0;
-  refreshRedoActionButtons();
+  resetRedoSelectionState();
 
   placeFood();
   eatHistory = [cloneState()];
   redosUsed = 0;
   maxRedos = maxContinues;
+  refreshRedoActionButtons();
 
   draw();
   updateKeysDisplay();
@@ -615,6 +615,9 @@ function updateRedoText() {
 
 function refreshRedoActionButtons() {
   const hasPendingRedo = pendingRedoCount > 0;
+  const hasRedoHistory = eatHistory.length > 1;
+  const hasAdRedo = (maxRedos - redosUsed) > 0;
+  const hasKeyRedo = playerKeys > 0;
 
   document.getElementById("continueAfterRedoBtn").style.display = hasPendingRedo ? "inline-block" : "none";
   document.getElementById("watchAdBtn").style.display = hasPendingRedo ? "none" : "inline-block";
@@ -622,6 +625,17 @@ function refreshRedoActionButtons() {
 
   document.getElementById("continueAfterPauseRedoBtn").style.display = hasPendingRedo ? "inline-block" : "none";
   document.getElementById("resumeFromModalBtn").style.display = hasPendingRedo ? "none" : "inline-block";
+
+  document.getElementById("redoFromGameOverAdBtn").disabled = !hasRedoHistory || !hasAdRedo;
+  document.getElementById("redoFromGameOverKeyBtn").disabled = !hasRedoHistory || !hasKeyRedo;
+  document.getElementById("redoAdBtn").disabled = !hasRedoHistory || !hasAdRedo;
+  document.getElementById("redoKeyBtn").disabled = !hasRedoHistory || !hasKeyRedo;
+}
+
+function resetRedoSelectionState() {
+  pendingRedoCount = 0;
+  refreshRedoActionButtons();
+  updateRedoText();
 }
 
 function setPaused(value) {
@@ -713,9 +727,7 @@ function gameOver() {
   const remaining = maxContinues - continuesUsed;
   document.getElementById("continueText").innerText =
     `Go back to before the last red dot. Ad continues left: ${Math.max(remaining, 0)}. Keys are always available.`;
-  document.getElementById("continueAfterRedoBtn").style.display = "none";
-  pendingRedoCount = 0;
-  refreshRedoActionButtons();
+  resetRedoSelectionState();
 
   continueModal.style.display = "block";
 }
@@ -779,22 +791,20 @@ function continueGameFromCheckpoint() {
 
   draw();
   startCountdownThenResume(speed);
+  resetRedoSelectionState();
 }
 
 function continueAfterRedoSelection() {
   const speed = Number(document.getElementById("speed").value);
-  pendingRedoCount = 0;
-  refreshRedoActionButtons();
+  resetRedoSelectionState();
   if (isGameOver) {
     continueModal.style.display = "none";
     startCountdownThenResume(speed);
-    updateRedoText();
     return;
   }
 
   setPaused(false);
   startCountdownThenResume(speed);
-  updateRedoText();
 }
 
 function winGame() {
@@ -975,9 +985,7 @@ document.getElementById("buyKeysHomeBtn").onclick = () => {
 
 document.getElementById("endGameBtn").onclick = () => {
   continueModal.style.display = "none";
-  pendingRedoCount = 0;
-  refreshRedoActionButtons();
-  updateRedoText();
+  resetRedoSelectionState();
 };
 
 document.getElementById("resumeFromModalBtn").onclick = () => {
