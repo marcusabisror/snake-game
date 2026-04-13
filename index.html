@@ -435,7 +435,6 @@ document.getElementById("closeHowToPlayBtn").onclick = () => {
 window.onclick = (e) => {
   if (e.target === soundModal) soundModal.style.display = "none";
   if (e.target === howToPlayModal) howToPlayModal.style.display = "none";
-  if (e.target === pauseModal) pauseModal.style.display = "none";
 };
 
 masterToggle.onchange = () => {
@@ -853,6 +852,10 @@ window.addEventListener("keydown", (e) => {
   if (e.key === " ") {
     e.preventDefault();
     if (!isGameOver && !isWin && !inCountdown && gameInterval) {
+      if (paused && pendingRedoCount > 0) {
+        continueAfterRedoSelection();
+        return;
+      }
       setPaused(!paused);
     }
     return;
@@ -896,6 +899,10 @@ document.getElementById("restart").onclick = () => {
 
 document.getElementById("pauseBtn").onclick = () => {
   if (!gameInterval || isGameOver || isWin || inCountdown) return;
+  if (paused && pendingRedoCount > 0) {
+    continueAfterRedoSelection();
+    return;
+  }
   setPaused(!paused);
 };
 
@@ -968,6 +975,9 @@ document.getElementById("buyKeysHomeBtn").onclick = () => {
 
 document.getElementById("endGameBtn").onclick = () => {
   continueModal.style.display = "none";
+  pendingRedoCount = 0;
+  refreshRedoActionButtons();
+  updateRedoText();
 };
 
 document.getElementById("resumeFromModalBtn").onclick = () => {
