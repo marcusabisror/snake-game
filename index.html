@@ -546,9 +546,8 @@ function setupGame() {
   document.getElementById("countdown-overlay").style.display = "none";
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
-  document.getElementById("continueAfterRedoBtn").style.display = "none";
-  document.getElementById("continueAfterPauseRedoBtn").style.display = "none";
   pendingRedoCount = 0;
+  refreshRedoActionButtons();
 
   placeFood();
   eatHistory = [cloneState()];
@@ -615,6 +614,17 @@ function updateRedoText() {
   document.getElementById("continueText").innerText = resumeText;
 }
 
+function refreshRedoActionButtons() {
+  const hasPendingRedo = pendingRedoCount > 0;
+
+  document.getElementById("continueAfterRedoBtn").style.display = hasPendingRedo ? "inline-block" : "none";
+  document.getElementById("watchAdBtn").style.display = hasPendingRedo ? "none" : "inline-block";
+  document.getElementById("useKeyBtn").style.display = hasPendingRedo ? "none" : "inline-block";
+
+  document.getElementById("continueAfterPauseRedoBtn").style.display = hasPendingRedo ? "inline-block" : "none";
+  document.getElementById("resumeFromModalBtn").style.display = hasPendingRedo ? "none" : "inline-block";
+}
+
 function setPaused(value) {
   paused = value;
   document.getElementById("pause-overlay").style.display = paused ? "block" : "none";
@@ -622,7 +632,7 @@ function setPaused(value) {
 
   if (paused && !isGameOver && !isWin && !inCountdown && gameInterval) {
     updateRedoText();
-    document.getElementById("continueAfterPauseRedoBtn").style.display = pendingRedoCount > 0 ? "inline-block" : "none";
+    refreshRedoActionButtons();
     pauseModal.style.display = "block";
   } else {
     pauseModal.style.display = "none";
@@ -705,8 +715,8 @@ function gameOver() {
   document.getElementById("continueText").innerText =
     `Go back to before the last red dot. Ad continues left: ${Math.max(remaining, 0)}. Keys are always available.`;
   document.getElementById("continueAfterRedoBtn").style.display = "none";
-  document.getElementById("continueAfterPauseRedoBtn").style.display = "none";
   pendingRedoCount = 0;
+  refreshRedoActionButtons();
 
   continueModal.style.display = "block";
 }
@@ -774,19 +784,17 @@ function continueGameFromCheckpoint() {
 
 function continueAfterRedoSelection() {
   const speed = Number(document.getElementById("speed").value);
-  document.getElementById("continueAfterRedoBtn").style.display = "none";
-  document.getElementById("continueAfterPauseRedoBtn").style.display = "none";
+  pendingRedoCount = 0;
+  refreshRedoActionButtons();
   if (isGameOver) {
     continueModal.style.display = "none";
     startCountdownThenResume(speed);
-    pendingRedoCount = 0;
     updateRedoText();
     return;
   }
 
   setPaused(false);
   startCountdownThenResume(speed);
-  pendingRedoCount = 0;
   updateRedoText();
 }
 
@@ -905,8 +913,7 @@ function redoToPreviousEat() {
   document.getElementById("game-over-overlay").style.display = "none";
   draw();
   pendingRedoCount++;
-  document.getElementById("continueAfterRedoBtn").style.display = "inline-block";
-  document.getElementById("continueAfterPauseRedoBtn").style.display = "inline-block";
+  refreshRedoActionButtons();
   updateRedoText();
 }
 
@@ -964,10 +971,6 @@ document.getElementById("endGameBtn").onclick = () => {
 };
 
 document.getElementById("resumeFromModalBtn").onclick = () => {
-  if (pendingRedoCount > 0) {
-    continueAfterRedoSelection();
-    return;
-  }
   setPaused(false);
 };
 
@@ -1007,6 +1010,7 @@ document.getElementById("continueAfterPauseRedoBtn").onclick = () => {
 /* INITIAL */
 updateSoundSettings();
 updateKeysDisplay();
+refreshRedoActionButtons();
 </script>
 
 </body>
