@@ -51,9 +51,9 @@
       min-width: 215px;
     }
 
-    #progress-percent {
+    #score-display {
       font-size: 18px;
-      min-width: 52px;
+      min-width: 92px;
     }
 
     #progress-tube {
@@ -247,8 +247,8 @@
   <div id="controls">
     <label>Speed:</label>
     <select id="speed">
-      <option value="300">Slow</option>
-      <option value="200" selected>Regular</option>
+      <option value="300" selected>Regular</option>
+      <option value="200">Fast</option>
     </select>
 
     <label>Board Size:</label>
@@ -268,7 +268,7 @@
 
   <div id="top-bar">
     <div id="progress-wrapper">
-      <div id="progress-percent">0%</div>
+      <div id="score-display">Score: 0</div>
       <div id="progress-tube">
         <div id="progress-fill"></div>
       </div>
@@ -340,6 +340,7 @@
       <p id="redoText">Redo takes you back to before the last red dot was eaten.</p>
 
       <button id="resumeFromModalBtn" class="modal-btn primary">Resume</button><br>
+      <button id="pauseSoundBtn" class="modal-btn secondary">Sound Settings</button><br>
       <button id="redoAdBtn" class="modal-btn secondary">↶ Redo Watch Ad</button><br>
       <button id="redoKeyBtn" class="modal-btn secondary">↶ Redo Use Key</button><br>
       <button id="buyRedoBtn" class="modal-btn warning">Buy Keys (Continue + Redo)</button>
@@ -439,6 +440,49 @@ function playGameOverSound() {
 function playWinSound() {
   if (!masterSound || !effectsEnabled) return;
   resetAndPlay(winSound);
+  playWinFanfare();
+}
+
+function playWinFanfare() {
+  if (!masterSound || !effectsEnabled) return;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return;
+
+  const audioCtx = new AudioCtx();
+  const now = audioCtx.currentTime + 0.03;
+  const notes = [523.25, 659.25, 783.99, 1046.5, 1174.66, 1318.51];
+
+  notes.forEach((freq, i) => {
+    const t = now + i * 0.16;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = i % 2 === 0 ? "triangle" : "sine";
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.22, t + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.38);
+  });
+
+  const finalStart = now + notes.length * 0.16;
+  const finalOsc = audioCtx.createOscillator();
+  const finalGain = audioCtx.createGain();
+  finalOsc.type = "sawtooth";
+  finalOsc.frequency.setValueAtTime(1318.51, finalStart);
+  finalOsc.frequency.exponentialRampToValueAtTime(1760, finalStart + 0.35);
+  finalGain.gain.setValueAtTime(0.0001, finalStart);
+  finalGain.gain.exponentialRampToValueAtTime(0.16, finalStart + 0.08);
+  finalGain.gain.exponentialRampToValueAtTime(0.0001, finalStart + 0.9);
+
+  finalOsc.connect(finalGain);
+  finalGain.connect(audioCtx.destination);
+  finalOsc.start(finalStart);
+  finalOsc.stop(finalStart + 1);
 }
 
 function updateBGM() {
@@ -510,6 +554,8 @@ let isGameRunning = false;
 let isGameOver = false;
 let isWin = false;
 let inCountdown = false;
+let celebrationSpawner = null;
+let activeCelebrationTimers = [];
 
 /* CONTINUE / KEYS */
 let eatHistory = [];
@@ -566,7 +612,7 @@ function getProgressPercent() {
 
 function updateProgressDisplay() {
   const progressPercent = getProgressPercent();
-  document.getElementById("progress-percent").innerText = `${Math.round(progressPercent)}%`;
+  document.getElementById("score-display").innerText = `Score: ${score}`;
   document.getElementById("progress-fill").style.width = `${progressPercent}%`;
 }
 
@@ -590,6 +636,7 @@ function setupGame() {
   isGameOver = false;
   isWin = false;
   inCountdown = false;
+  stopCelebration();
 
   continuesUsed = 0;
   maxContinues = getMaxContinues(boardSize);
@@ -678,6 +725,7 @@ function setPaused(value) {
 }
 
 function resumeGameplayFromCurrentState() {
+  if (!paused || isGameOver || isWin || inCountdown || !gameInterval) return;
   const speed = Number(document.getElementById("speed").value);
   startCountdownThenResume(speed);
 }
@@ -848,10 +896,16 @@ function winGame() {
 }
 
 function launchCelebration() {
+  stopCelebration();
+  spawnConfettiBurst(95);
+  celebrationSpawner = setInterval(() => spawnConfettiBurst(18), 280);
+}
+
+function spawnConfettiBurst(pieceCount = 60) {
   const wrapper = document.getElementById("game-wrapper");
   const colors = ["#ff5252", "#ffd54f", "#66bb6a", "#42a5f5", "#ab47bc", "#ff8a65"];
 
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < pieceCount; i++) {
     const piece = document.createElement("div");
     piece.className = "confetti-piece";
     piece.style.background = colors[Math.floor(Math.random() * colors.length)];
@@ -873,20 +927,33 @@ function launchCelebration() {
 
       if (y > 430) {
         clearInterval(timer);
+        activeCelebrationTimers = activeCelebrationTimers.filter(t => t !== timer);
         piece.remove();
       }
     }, 20);
+    activeCelebrationTimers.push(timer);
   }
+}
+
+function stopCelebration() {
+  if (celebrationSpawner) {
+    clearInterval(celebrationSpawner);
+    celebrationSpawner = null;
+  }
+
+  activeCelebrationTimers.forEach(clearInterval);
+  activeCelebrationTimers = [];
+  document.querySelectorAll(".confetti-piece").forEach(piece => piece.remove());
 }
 
 window.addEventListener("keydown", (e) => {
   if (e.key === " ") {
     e.preventDefault();
     if (!isGameOver && !isWin && !inCountdown && gameInterval) {
-      if (paused && redoSincePauseOpened) {
+      if (paused) {
         resumeGameplayFromCurrentState();
       } else {
-        setPaused(!paused);
+        setPaused(true);
       }
     }
     return;
@@ -930,7 +997,11 @@ document.getElementById("restart").onclick = () => {
 
 document.getElementById("pauseBtn").onclick = () => {
   if (!gameInterval || isGameOver || isWin || inCountdown) return;
-  setPaused(!paused);
+  if (paused) {
+    resumeGameplayFromCurrentState();
+    return;
+  }
+  setPaused(true);
 };
 
 function redoToPreviousEat() {
@@ -1003,11 +1074,11 @@ document.getElementById("endGameBtn").onclick = () => {
 };
 
 document.getElementById("resumeFromModalBtn").onclick = () => {
-  if (redoSincePauseOpened) {
-    resumeGameplayFromCurrentState();
-    return;
-  }
-  setPaused(false);
+  resumeGameplayFromCurrentState();
+};
+
+document.getElementById("pauseSoundBtn").onclick = () => {
+  soundModal.style.display = "block";
 };
 
 document.getElementById("redoAdBtn").onclick = () => {
