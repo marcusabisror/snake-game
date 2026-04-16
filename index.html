@@ -10,9 +10,9 @@
       --text: #eef6fb;
       --accent: #4dd0e1;
       --danger: #ff6b6b;
-      --food: #ff4d4d;
-      --snake-head: #00c853;
-      --snake-body: #43e97b;
+      --food: #ff3b30;
+      --snake-head: #00e5ff;
+      --snake-body: #2ecc71;
     }
 
     body {
@@ -608,7 +608,12 @@ const masterToggle = document.getElementById("masterSoundToggle");
 const effectsToggle = document.getElementById("effectsToggle");
 const bgmToggle = document.getElementById("bgmToggle");
 
-soundBtn.onclick = () => soundModal.style.display = "block";
+function openSoundModal() {
+  pauseModal.style.display = "none";
+  soundModal.style.display = "block";
+}
+
+soundBtn.onclick = () => openSoundModal();
 closeModal.onclick = () => soundModal.style.display = "none";
 
 document.getElementById("howToPlayBtn").onclick = () => {
@@ -675,12 +680,7 @@ let historyCursor = 0;
 let playerKeys = 0;
 let redoSincePauseOpened = false;
 let stagedRedoFromGameOver = false;
-let bonusFood = null;
-let bonusFoodExpiresAt = 0;
 
-const BONUS_FOOD_MIN_SCORE = 5;
-const BONUS_POINTS = 3;
-const BONUS_LIFETIME_MS = 4500;
 const SPEED_STEP_MS = 10;
 const MIN_SPEED_MS = 85;
 
@@ -738,8 +738,6 @@ function cloneState() {
   return {
     snake: JSON.parse(JSON.stringify(snake)),
     food: food ? { ...food } : null,
-    bonusFood: bonusFood ? { ...bonusFood } : null,
-    bonusFoodExpiresAt,
     dx,
     dy,
     score,
@@ -752,8 +750,6 @@ function cloneState() {
 function restoreState(state) {
   snake = JSON.parse(JSON.stringify(state.snake));
   food = state.food ? { ...state.food } : null;
-  bonusFood = state.bonusFood ? { ...state.bonusFood } : null;
-  bonusFoodExpiresAt = state.bonusFoodExpiresAt || 0;
   dx = state.dx;
   dy = state.dy;
   score = state.score;
@@ -788,8 +784,6 @@ function setupGame() {
   dx = 0;
   dy = 0;
   score = 0;
-  bonusFood = null;
-  bonusFoodExpiresAt = 0;
   refreshMoveInterval();
 
   nextDirection = null;
@@ -832,8 +826,7 @@ function placeFood() {
   for (let x = 0; x < cols; x++) {
     for (let y = 0; y < rows; y++) {
       const occupied = snake.some(part => part.x === x && part.y === y);
-      const blockedByBonus = bonusFood && bonusFood.x === x && bonusFood.y === y;
-      if (!occupied && !blockedByBonus) {
+      if (!occupied) {
         emptyCells.push({ x, y });
       }
     }
@@ -846,33 +839,6 @@ function placeFood() {
   }
 
   food = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-}
-
-function maybeSpawnBonusFood() {
-  if (score < BONUS_FOOD_MIN_SCORE || bonusFood) return;
-  if (Math.random() > 0.22) return;
-
-  const emptyCells = [];
-  for (let x = 0; x < cols; x++) {
-    for (let y = 0; y < rows; y++) {
-      const blockedBySnake = snake.some(part => part.x === x && part.y === y);
-      const blockedByFood = food && food.x === x && food.y === y;
-      if (!blockedBySnake && !blockedByFood) {
-        emptyCells.push({ x, y });
-      }
-    }
-  }
-
-  if (!emptyCells.length) return;
-  bonusFood = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-  bonusFoodExpiresAt = Date.now() + BONUS_LIFETIME_MS;
-}
-
-function expireBonusFoodIfNeeded() {
-  if (!bonusFood) return;
-  if (Date.now() <= bonusFoodExpiresAt) return;
-  bonusFood = null;
-  bonusFoodExpiresAt = 0;
 }
 
 function drawGrid() {
@@ -889,24 +855,39 @@ function draw() {
   drawGrid();
 
   if (food) {
+    const cx = (food.x * scale) + scale / 2;
+    const cy = (food.y * scale) + scale / 2;
+    const radius = Math.max(3, Math.floor(scale * 0.28));
     ctx.fillStyle = "var(--food)";
-    ctx.fillRect(food.x * scale, food.y * scale, scale, scale);
-  }
-
-  if (bonusFood) {
-    ctx.fillStyle = "#ffd166";
-    const padding = Math.max(2, Math.floor(scale * 0.18));
-    ctx.fillRect(
-      bonusFood.x * scale + padding,
-      bonusFood.y * scale + padding,
-      scale - (padding * 2),
-      scale - (padding * 2)
-    );
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   snake.forEach((part, i) => {
+    const cellX = part.x * scale;
+    const cellY = part.y * scale;
+    const inset = Math.max(1, Math.floor(scale * 0.08));
+    const drawX = cellX + inset;
+    const drawY = cellY + inset;
+    const drawSize = scale - inset * 2;
+
     ctx.fillStyle = (i === 0) ? "var(--snake-head)" : "var(--snake-body)";
-    ctx.fillRect(part.x * scale, part.y * scale, scale, scale);
+    ctx.fillRect(drawX, drawY, drawSize, drawSize);
+
+    if (i === 0) {
+      ctx.strokeStyle = "#00363f";
+      ctx.lineWidth = Math.max(1, Math.floor(scale * 0.06));
+      ctx.strokeRect(drawX, drawY, drawSize, drawSize);
+
+      const eyeSize = Math.max(1.5, scale * 0.09);
+      const eyeOffset = Math.max(3, scale * 0.25);
+      ctx.fillStyle = "#00363f";
+      ctx.beginPath();
+      ctx.arc(cellX + eyeOffset, cellY + eyeOffset, eyeSize, 0, Math.PI * 2);
+      ctx.arc(cellX + scale - eyeOffset, cellY + eyeOffset, eyeSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
   });
 }
 
@@ -942,7 +923,6 @@ function update() {
     directionLocked = false;
     return;
   }
-  expireBonusFoodIfNeeded();
 
   if (nextDirection) {
     dx = nextDirection.dx;
@@ -990,21 +970,10 @@ function update() {
     }
 
     placeFood();
-    maybeSpawnBonusFood();
     if (isWin) {
       draw();
       return;
     }
-  } else if (bonusFood && head.x === bonusFood.x && head.y === bonusFood.y) {
-    score += BONUS_POINTS;
-    saveHighScoreIfNeeded();
-    refreshMoveInterval();
-    updateProgressDisplay();
-    updateStatus(`Bonus! +${BONUS_POINTS} points`);
-    bonusFood = null;
-    bonusFoodExpiresAt = 0;
-    playEat10Sound();
-    snake.pop();
   } else {
     snake.pop();
   }
@@ -1327,7 +1296,7 @@ document.getElementById("resumeFromModalBtn").onclick = () => {
 };
 
 document.getElementById("pauseSoundBtn").onclick = () => {
-  soundModal.style.display = "block";
+  openSoundModal();
 };
 
 document.getElementById("redoAdBtn").onclick = () => {
