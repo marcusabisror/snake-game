@@ -651,14 +651,18 @@ bgmToggle.onchange = () => {
 let canvas, ctx;
 let scale, rows, cols;
 let snake, food, dx, dy;
-let gameInterval = null;
 let animationFrameId = null;
 let lastFrameTime = 0;
 let accumulatedTime = 0;
 let score = 0;
-let highScore = Number(localStorage.getItem("snakeHighScore") || 0);
+let highScore = 0;
 let boardSize = 20;
 let moveIntervalMs = 300;
+let canvasColors = {
+  food: "#ff3b30",
+  snakeHead: "#00e5ff",
+  snakeBody: "#2ecc71"
+};
 
 let nextDirection = null;
 let directionLocked = false;
@@ -696,10 +700,24 @@ function updateHighScoreDisplay() {
   document.getElementById("high-score-display").innerText = `Best: ${highScore}`;
 }
 
+function getHighScoreKeyForBoard(size) {
+  return `snakeHighScore_${size}`;
+}
+
+function loadHighScoreForBoard(size) {
+  return Number(localStorage.getItem(getHighScoreKeyForBoard(size)) || 0);
+}
+
+function refreshDisplayedHighScoreForSelectedBoard() {
+  const selectedBoardSize = Number(document.getElementById("board").value);
+  highScore = loadHighScoreForBoard(selectedBoardSize);
+  updateHighScoreDisplay();
+}
+
 function saveHighScoreIfNeeded() {
   if (score <= highScore) return;
   highScore = score;
-  localStorage.setItem("snakeHighScore", String(highScore));
+  localStorage.setItem(getHighScoreKeyForBoard(boardSize), String(highScore));
   updateHighScoreDisplay();
 }
 
@@ -722,8 +740,15 @@ function stopGameLoop() {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
   }
-  clearInterval(gameInterval);
-  gameInterval = null;
+}
+
+function refreshCanvasColors() {
+  const styles = getComputedStyle(document.documentElement);
+  canvasColors = {
+    food: styles.getPropertyValue("--food").trim() || "#ff3b30",
+    snakeHead: styles.getPropertyValue("--snake-head").trim() || "#00e5ff",
+    snakeBody: styles.getPropertyValue("--snake-body").trim() || "#2ecc71"
+  };
 }
 
 function getMaxContinues(size) {
@@ -775,8 +800,10 @@ function updateProgressDisplay() {
 function setupGame() {
   canvas = document.getElementById("game");
   ctx = canvas.getContext("2d");
+  refreshCanvasColors();
 
   boardSize = Number(document.getElementById("board").value);
+  highScore = loadHighScoreForBoard(boardSize);
   scale = 400 / boardSize;
   rows = cols = boardSize;
 
@@ -858,7 +885,7 @@ function draw() {
     const cx = (food.x * scale) + scale / 2;
     const cy = (food.y * scale) + scale / 2;
     const radius = Math.max(3, Math.floor(scale * 0.28));
-    ctx.fillStyle = "var(--food)";
+    ctx.fillStyle = canvasColors.food;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
@@ -872,7 +899,7 @@ function draw() {
     const drawY = cellY + inset;
     const drawSize = scale - inset * 2;
 
-    ctx.fillStyle = (i === 0) ? "var(--snake-head)" : "var(--snake-body)";
+    ctx.fillStyle = (i === 0) ? canvasColors.snakeHead : canvasColors.snakeBody;
     ctx.fillRect(drawX, drawY, drawSize, drawSize);
 
     if (i === 0) {
@@ -1362,10 +1389,15 @@ document.getElementById("speed").addEventListener("change", () => {
   updateStatus("Speed setting updated.");
 });
 
+document.getElementById("board").addEventListener("change", () => {
+  refreshDisplayedHighScoreForSelectedBoard();
+});
+
 /* INITIAL */
 updateSoundSettings();
 updateKeysDisplay();
-updateHighScoreDisplay();
+refreshCanvasColors();
+refreshDisplayedHighScoreForSelectedBoard();
 </script>
 
 </body>
