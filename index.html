@@ -391,7 +391,7 @@
     </div>
   </div>
 
-  <div id="game-status">Press Start Game to begin.</div>
+  <div id="game-status">Press Start to begin.</div>
 
   <div id="game-wrapper" style="position:relative; width:400px; height:400px;">
     <canvas id="game" width="400" height="400"></canvas>
@@ -860,7 +860,7 @@ function setupGame() {
   document.getElementById("countdown-overlay").style.display = "none";
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
-  updateStatus("Use arrow keys (or touch controls) to move. Avoid walls and yourself.");
+  updateStatus("Use arrows or touch controls. Avoid walls and your tail.");
 
   placeFood();
   eatHistory = [cloneState()];
@@ -1012,7 +1012,7 @@ function update() {
     refreshMoveInterval();
     syncGameLoopSpeed();
     updateProgressDisplay();
-    updateStatus(`Nice! Speed ${Math.round(1000 / moveIntervalMs)} moves/sec`);
+    updateStatus("Nice! Speed increased.");
 
     if (score % 10 === 0) playEat10Sound();
     else playEatSound();
@@ -1051,7 +1051,7 @@ function gameOver() {
   playGameOverSound();
   document.getElementById("game-over-overlay").innerText = "GAME OVER";
   document.getElementById("game-over-overlay").style.display = "block";
-  updateStatus("Game over. Continue from checkpoint or restart.");
+  updateStatus("Game over. Continue or restart.");
 
   const remaining = maxContinues - continuesUsed;
   const redoRemaining = maxRedos - redosUsed;
@@ -1091,7 +1091,7 @@ function startCountdownThenResume() {
     isGameOver = false;
     isGameRunning = true;
     refreshMoveInterval();
-    updateStatus(`Back in! Speed ${Math.round(1000 / moveIntervalMs)} moves/sec`);
+    updateStatus("Back in. Stay sharp.");
     startGameLoop();
   }, 1000);
 }
@@ -1240,7 +1240,7 @@ document.getElementById("start").onclick = () => {
 document.getElementById("restart").onclick = () => {
   setupGame();
   startGameLoop();
-  updateStatus("Game restarted.");
+  updateStatus("Game restarted. Good luck!");
   updateSoundSettings();
   updateBGM();
 };
@@ -1392,7 +1392,7 @@ document.querySelectorAll(".touch-btn").forEach((button) => {
 document.getElementById("speed").addEventListener("change", () => {
   refreshMoveInterval();
   syncGameLoopSpeed();
-  updateStatus("Speed setting updated.");
+  updateStatus("Speed updated.");
 });
 
 document.getElementById("board").addEventListener("change", () => {
