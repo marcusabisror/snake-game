@@ -3,16 +3,30 @@
 <head>
   <title>Snake Game</title>
   <style>
+    :root {
+      --bg: #101820;
+      --panel: #1b2a35;
+      --panel-border: #2d4658;
+      --text: #eef6fb;
+      --accent: #4dd0e1;
+      --danger: #ff6b6b;
+      --food: #ff4d4d;
+      --snake-head: #00c853;
+      --snake-body: #43e97b;
+    }
+
     body {
-      background: #222;
+      background: radial-gradient(circle at top, #163246 0%, var(--bg) 60%);
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
       align-items: center;
       height: 100vh;
       margin: 0;
-      color: white;
-      font-family: Arial;
+      color: var(--text);
+      font-family: "Segoe UI", Arial, sans-serif;
+      padding: 10px;
+      box-sizing: border-box;
     }
 
     #controls {
@@ -29,12 +43,17 @@
     }
 
     #top-bar {
-      width: 400px;
+      width: min(400px, 95vw);
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 5px;
       gap: 8px;
+      background: rgba(17, 30, 39, 0.85);
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 8px;
+      box-sizing: border-box;
     }
 
     #top-bar-right {
@@ -43,7 +62,15 @@
       align-items: center;
     }
 
-    canvas { background: #111; }
+    canvas {
+      background: linear-gradient(180deg, #0b1117 0%, #0d1922 100%);
+      border: 2px solid var(--panel-border);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      touch-action: none;
+      max-width: 100%;
+      height: auto;
+    }
     #progress-wrapper {
       display: flex;
       align-items: center;
@@ -52,15 +79,20 @@
     }
 
     #score-display {
-      font-size: 18px;
-      min-width: 92px;
+      font-size: 17px;
+      min-width: 86px;
+    }
+
+    #high-score-display {
+      font-size: 14px;
+      color: #b5d6e8;
     }
 
     #progress-tube {
       position: relative;
       width: 150px;
       height: 16px;
-      border: 2px solid #888;
+      border: 2px solid #4a6e84;
       border-radius: 999px;
       background: #1a1a1a;
       overflow: hidden;
@@ -74,10 +106,10 @@
       background:
         linear-gradient(
           to right,
-          lime 0%,
-          lime 78%,
-          green 78%,
-          green 100%
+          #43e97b 0%,
+          #43e97b 78%,
+          #00c853 78%,
+          #00c853 100%
         );
       transition: width 120ms linear;
     }
@@ -86,8 +118,8 @@
 
     .settings-btn {
       padding: 8px 16px;
-      background: #555;
-      color: white;
+      background: #335265;
+      color: var(--text);
       border: none;
       border-radius: 6px;
       cursor: pointer;
@@ -103,14 +135,14 @@
     }
 
     .modal-content {
-      background: #222;
+      background: var(--panel);
       margin: 8% auto;
       padding: 20px;
       width: 320px;
       color: white;
       border-radius: 10px;
       text-align: center;
-      border: 1px solid #555;
+      border: 1px solid var(--panel-border);
       box-shadow: 0 0 20px rgba(0,0,0,0.5);
     }
 
@@ -239,6 +271,61 @@
       opacity: 0.95;
       border-radius: 2px;
     }
+
+    #game-status {
+      min-height: 20px;
+      margin: 8px 0;
+      color: #b4d8eb;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    #touch-controls {
+      display: none;
+      margin-top: 10px;
+      gap: 8px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .touch-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .touch-btn {
+      width: 58px;
+      height: 58px;
+      border-radius: 12px;
+      border: 1px solid #4f7085;
+      background: #254557;
+      color: white;
+      font-size: 24px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    @media (max-width: 700px) {
+      #controls {
+        width: 100%;
+      }
+
+      #top-bar-right {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      #game-wrapper {
+        width: min(400px, 95vw) !important;
+        height: min(400px, 95vw) !important;
+      }
+
+      #touch-controls {
+        display: flex;
+        flex-direction: column;
+      }
+    }
   </style>
 </head>
 
@@ -268,7 +355,10 @@
 
   <div id="top-bar">
     <div id="progress-wrapper">
-      <div id="score-display">Score: 0</div>
+      <div>
+        <div id="score-display">Score: 0</div>
+        <div id="high-score-display">Best: 0</div>
+      </div>
       <div id="progress-tube">
         <div id="progress-fill"></div>
       </div>
@@ -280,11 +370,24 @@
     </div>
   </div>
 
+  <div id="game-status">Press Start Game to begin.</div>
+
   <div id="game-wrapper" style="position:relative; width:400px; height:400px;">
     <canvas id="game" width="400" height="400"></canvas>
     <div id="pause-overlay">PAUSED</div>
     <div id="countdown-overlay">3</div>
     <div id="game-over-overlay">GAME OVER</div>
+  </div>
+
+  <div id="touch-controls">
+    <div class="touch-row">
+      <button class="touch-btn" data-dir="up" aria-label="Move up">↑</button>
+    </div>
+    <div class="touch-row">
+      <button class="touch-btn" data-dir="left" aria-label="Move left">←</button>
+      <button class="touch-btn" data-dir="down" aria-label="Move down">↓</button>
+      <button class="touch-btn" data-dir="right" aria-label="Move right">→</button>
+    </div>
   </div>
 
   <div id="soundModal" class="modal">
@@ -544,8 +647,13 @@ let canvas, ctx;
 let scale, rows, cols;
 let snake, food, dx, dy;
 let gameInterval = null;
+let animationFrameId = null;
+let lastFrameTime = 0;
+let accumulatedTime = 0;
 let score = 0;
+let highScore = Number(localStorage.getItem("snakeHighScore") || 0);
 let boardSize = 20;
+let moveIntervalMs = 300;
 
 let nextDirection = null;
 let directionLocked = false;
@@ -567,9 +675,55 @@ let historyCursor = 0;
 let playerKeys = 0;
 let redoSincePauseOpened = false;
 let stagedRedoFromGameOver = false;
+let bonusFood = null;
+let bonusFoodExpiresAt = 0;
+
+const BONUS_FOOD_MIN_SCORE = 5;
+const BONUS_POINTS = 3;
+const BONUS_LIFETIME_MS = 4500;
+const SPEED_STEP_MS = 10;
+const MIN_SPEED_MS = 85;
 
 function updateKeysDisplay() {
   document.getElementById("keysDisplay").innerText = "Keys: " + playerKeys;
+}
+
+function updateStatus(message) {
+  document.getElementById("game-status").innerText = message;
+}
+
+function updateHighScoreDisplay() {
+  document.getElementById("high-score-display").innerText = `Best: ${highScore}`;
+}
+
+function saveHighScoreIfNeeded() {
+  if (score <= highScore) return;
+  highScore = score;
+  localStorage.setItem("snakeHighScore", String(highScore));
+  updateHighScoreDisplay();
+}
+
+function getBaseSpeed() {
+  return Number(document.getElementById("speed").value);
+}
+
+function getSpeedForScore() {
+  const baseSpeed = getBaseSpeed();
+  const speedBonus = Math.floor(score / 4) * SPEED_STEP_MS;
+  return Math.max(MIN_SPEED_MS, baseSpeed - speedBonus);
+}
+
+function refreshMoveInterval() {
+  moveIntervalMs = getSpeedForScore();
+}
+
+function stopGameLoop() {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+  clearInterval(gameInterval);
+  gameInterval = null;
 }
 
 function getMaxContinues(size) {
@@ -584,22 +738,28 @@ function cloneState() {
   return {
     snake: JSON.parse(JSON.stringify(snake)),
     food: food ? { ...food } : null,
+    bonusFood: bonusFood ? { ...bonusFood } : null,
+    bonusFoodExpiresAt,
     dx,
     dy,
     score,
     boardSize,
-    nextDirection: nextDirection ? { ...nextDirection } : null
+    nextDirection: nextDirection ? { ...nextDirection } : null,
+    moveIntervalMs
   };
 }
 
 function restoreState(state) {
   snake = JSON.parse(JSON.stringify(state.snake));
   food = state.food ? { ...state.food } : null;
+  bonusFood = state.bonusFood ? { ...state.bonusFood } : null;
+  bonusFoodExpiresAt = state.bonusFoodExpiresAt || 0;
   dx = state.dx;
   dy = state.dy;
   score = state.score;
   boardSize = state.boardSize;
   nextDirection = state.nextDirection ? { ...state.nextDirection } : null;
+  moveIntervalMs = state.moveIntervalMs || getSpeedForScore();
   updateProgressDisplay();
 }
 
@@ -628,6 +788,9 @@ function setupGame() {
   dx = 0;
   dy = 0;
   score = 0;
+  bonusFood = null;
+  bonusFoodExpiresAt = 0;
+  refreshMoveInterval();
 
   nextDirection = null;
   directionLocked = false;
@@ -637,17 +800,21 @@ function setupGame() {
   isWin = false;
   inCountdown = false;
   stopCelebration();
+  lastFrameTime = 0;
+  accumulatedTime = 0;
 
   continuesUsed = 0;
   maxContinues = getMaxContinues(boardSize);
 
   updateProgressDisplay();
+  updateHighScoreDisplay();
   document.getElementById("restart").style.display = "none";
   document.getElementById("game-over-overlay").style.display = "none";
   document.getElementById("pause-overlay").style.display = "none";
   document.getElementById("countdown-overlay").style.display = "none";
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
+  updateStatus("Use arrow keys (or touch controls) to move. Avoid walls and yourself.");
 
   placeFood();
   eatHistory = [cloneState()];
@@ -665,7 +832,8 @@ function placeFood() {
   for (let x = 0; x < cols; x++) {
     for (let y = 0; y < rows; y++) {
       const occupied = snake.some(part => part.x === x && part.y === y);
-      if (!occupied) {
+      const blockedByBonus = bonusFood && bonusFood.x === x && bonusFood.y === y;
+      if (!occupied && !blockedByBonus) {
         emptyCells.push({ x, y });
       }
     }
@@ -678,6 +846,33 @@ function placeFood() {
   }
 
   food = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+}
+
+function maybeSpawnBonusFood() {
+  if (score < BONUS_FOOD_MIN_SCORE || bonusFood) return;
+  if (Math.random() > 0.22) return;
+
+  const emptyCells = [];
+  for (let x = 0; x < cols; x++) {
+    for (let y = 0; y < rows; y++) {
+      const blockedBySnake = snake.some(part => part.x === x && part.y === y);
+      const blockedByFood = food && food.x === x && food.y === y;
+      if (!blockedBySnake && !blockedByFood) {
+        emptyCells.push({ x, y });
+      }
+    }
+  }
+
+  if (!emptyCells.length) return;
+  bonusFood = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+  bonusFoodExpiresAt = Date.now() + BONUS_LIFETIME_MS;
+}
+
+function expireBonusFoodIfNeeded() {
+  if (!bonusFood) return;
+  if (Date.now() <= bonusFoodExpiresAt) return;
+  bonusFood = null;
+  bonusFoodExpiresAt = 0;
 }
 
 function drawGrid() {
@@ -694,12 +889,23 @@ function draw() {
   drawGrid();
 
   if (food) {
-    ctx.fillStyle = "red";
+    ctx.fillStyle = "var(--food)";
     ctx.fillRect(food.x * scale, food.y * scale, scale, scale);
   }
 
+  if (bonusFood) {
+    ctx.fillStyle = "#ffd166";
+    const padding = Math.max(2, Math.floor(scale * 0.18));
+    ctx.fillRect(
+      bonusFood.x * scale + padding,
+      bonusFood.y * scale + padding,
+      scale - (padding * 2),
+      scale - (padding * 2)
+    );
+  }
+
   snake.forEach((part, i) => {
-    ctx.fillStyle = (i === 0) ? "green" : "lime";
+    ctx.fillStyle = (i === 0) ? "var(--snake-head)" : "var(--snake-body)";
     ctx.fillRect(part.x * scale, part.y * scale, scale, scale);
   });
 }
@@ -715,19 +921,19 @@ function setPaused(value) {
   document.getElementById("pause-overlay").style.display = paused ? "block" : "none";
   document.getElementById("pauseBtn").innerText = paused ? "Resume" : "Pause";
 
-  if (paused && !isGameOver && !isWin && !inCountdown && gameInterval) {
+  if (paused && !isGameOver && !isWin && !inCountdown && (isGameRunning || animationFrameId)) {
     redoSincePauseOpened = false;
     updateRedoText();
     pauseModal.style.display = "block";
+    updateStatus("Paused.");
   } else {
     pauseModal.style.display = "none";
   }
 }
 
 function resumeGameplayFromCurrentState() {
-  if (!paused || isGameOver || isWin || inCountdown || !gameInterval) return;
-  const speed = Number(document.getElementById("speed").value);
-  startCountdownThenResume(speed);
+  if (!paused || isGameOver || isWin || inCountdown || (!isGameRunning && !animationFrameId)) return;
+  startCountdownThenResume();
 }
 
 function update() {
@@ -736,6 +942,7 @@ function update() {
     directionLocked = false;
     return;
   }
+  expireBonusFoodIfNeeded();
 
   if (nextDirection) {
     dx = nextDirection.dx;
@@ -769,7 +976,10 @@ function update() {
     historyCursor = eatHistory.length - 1;
 
     score++;
+    saveHighScoreIfNeeded();
+    refreshMoveInterval();
     updateProgressDisplay();
+    updateStatus(`Nice! Speed ${Math.round(1000 / moveIntervalMs)} moves/sec`);
 
     if (score % 10 === 0) playEat10Sound();
     else playEatSound();
@@ -780,10 +990,21 @@ function update() {
     }
 
     placeFood();
+    maybeSpawnBonusFood();
     if (isWin) {
       draw();
       return;
     }
+  } else if (bonusFood && head.x === bonusFood.x && head.y === bonusFood.y) {
+    score += BONUS_POINTS;
+    saveHighScoreIfNeeded();
+    refreshMoveInterval();
+    updateProgressDisplay();
+    updateStatus(`Bonus! +${BONUS_POINTS} points`);
+    bonusFood = null;
+    bonusFoodExpiresAt = 0;
+    playEat10Sound();
+    snake.pop();
   } else {
     snake.pop();
   }
@@ -791,9 +1012,35 @@ function update() {
   draw();
 }
 
+function gameLoop(timestamp) {
+  if (!lastFrameTime) lastFrameTime = timestamp;
+  const delta = timestamp - lastFrameTime;
+  lastFrameTime = timestamp;
+  accumulatedTime += delta;
+
+  while (accumulatedTime >= moveIntervalMs) {
+    update();
+    accumulatedTime -= moveIntervalMs;
+    if (isGameOver || isWin || !isGameRunning) break;
+  }
+
+  if (isGameRunning || paused || inCountdown) {
+    animationFrameId = requestAnimationFrame(gameLoop);
+  } else {
+    animationFrameId = null;
+  }
+}
+
+function startGameLoop() {
+  stopGameLoop();
+  isGameRunning = true;
+  lastFrameTime = 0;
+  accumulatedTime = 0;
+  animationFrameId = requestAnimationFrame(gameLoop);
+}
+
 function gameOver() {
-  clearInterval(gameInterval);
-  gameInterval = null;
+  stopGameLoop();
   isGameOver = true;
   isGameRunning = false;
   setPaused(false);
@@ -803,6 +1050,7 @@ function gameOver() {
   playGameOverSound();
   document.getElementById("game-over-overlay").innerText = "GAME OVER";
   document.getElementById("game-over-overlay").style.display = "block";
+  updateStatus("Game over. Continue from checkpoint or restart.");
 
   const remaining = maxContinues - continuesUsed;
   const redoRemaining = maxRedos - redosUsed;
@@ -819,7 +1067,7 @@ function simulateRewardedAd(callback) {
   setTimeout(callback, 1000);
 }
 
-function startCountdownThenResume(speed) {
+function startCountdownThenResume() {
   const countdown = document.getElementById("countdown-overlay");
   let value = 3;
   inCountdown = true;
@@ -841,9 +1089,9 @@ function startCountdownThenResume(speed) {
     inCountdown = false;
     isGameOver = false;
     isGameRunning = true;
-
-    clearInterval(gameInterval);
-    gameInterval = setInterval(update, speed);
+    refreshMoveInterval();
+    updateStatus(`Back in! Speed ${Math.round(1000 / moveIntervalMs)} moves/sec`);
+    startGameLoop();
   }, 1000);
 }
 
@@ -856,10 +1104,7 @@ function continueGameFromCheckpoint() {
   const checkpointState = getLatestCheckpoint();
   if (!checkpointState) return;
 
-  const speed = Number(document.getElementById("speed").value);
-
-  clearInterval(gameInterval);
-  gameInterval = null;
+  stopGameLoop();
 
   restoreState(checkpointState);
 
@@ -873,14 +1118,13 @@ function continueGameFromCheckpoint() {
   pauseModal.style.display = "none";
 
   draw();
-  startCountdownThenResume(speed);
+  startCountdownThenResume();
 }
 
 function winGame() {
   if (isWin) return;
 
-  clearInterval(gameInterval);
-  gameInterval = null;
+  stopGameLoop();
   isWin = true;
   isGameRunning = false;
   setPaused(false);
@@ -889,6 +1133,7 @@ function winGame() {
   document.getElementById("restart").style.display = "block";
   document.getElementById("game-over-overlay").innerText = "🎉 GAME WIN 🎉";
   document.getElementById("game-over-overlay").style.display = "block";
+  updateStatus("Perfect run! Press Restart to play again.");
 
   playWinSound();
   draw();
@@ -946,10 +1191,26 @@ function stopCelebration() {
   document.querySelectorAll(".confetti-piece").forEach(piece => piece.remove());
 }
 
+function queueDirectionByName(directionName) {
+  if (paused || isGameOver || isWin || inCountdown || directionLocked) return;
+
+  let newDx = dx;
+  let newDy = dy;
+  if (directionName === "up" && dy !== 1) { newDx = 0; newDy = -1; }
+  if (directionName === "down" && dy !== -1) { newDx = 0; newDy = 1; }
+  if (directionName === "left" && dx !== 1) { newDx = -1; newDy = 0; }
+  if (directionName === "right" && dx !== -1) { newDx = 1; newDy = 0; }
+
+  if (newDx !== dx || newDy !== dy) {
+    nextDirection = { dx: newDx, dy: newDy };
+    directionLocked = true;
+  }
+}
+
 window.addEventListener("keydown", (e) => {
   if (e.key === " ") {
     e.preventDefault();
-    if (!isGameOver && !isWin && !inCountdown && gameInterval) {
+    if (!isGameOver && !isWin && !inCountdown && (isGameRunning || animationFrameId)) {
       if (paused) {
         resumeGameplayFromCurrentState();
       } else {
@@ -960,43 +1221,31 @@ window.addEventListener("keydown", (e) => {
   }
 
   if (paused || isGameOver || isWin || inCountdown) return;
-  if (directionLocked) return;
-
-  let newDx = dx;
-  let newDy = dy;
-
-  if (e.key === "ArrowUp" && dy !== 1)    { newDx = 0; newDy = -1; }
-  if (e.key === "ArrowDown" && dy !== -1) { newDx = 0; newDy = 1; }
-  if (e.key === "ArrowLeft" && dx !== 1)  { newDx = -1; newDy = 0; }
-  if (e.key === "ArrowRight" && dx !== -1){ newDx = 1; newDy = 0; }
-
-  if (newDx !== dx || newDy !== dy) {
-    nextDirection = { dx: newDx, dy: newDy };
-    directionLocked = true;
-  }
+  if (e.key === "ArrowUp") queueDirectionByName("up");
+  if (e.key === "ArrowDown") queueDirectionByName("down");
+  if (e.key === "ArrowLeft") queueDirectionByName("left");
+  if (e.key === "ArrowRight") queueDirectionByName("right");
 });
 
 /* BUTTONS */
 document.getElementById("start").onclick = () => {
-  clearInterval(gameInterval);
   setupGame();
-  const speed = Number(document.getElementById("speed").value);
-  gameInterval = setInterval(update, speed);
+  startGameLoop();
+  updateStatus("Game started. Good luck!");
   updateSoundSettings();
   updateBGM();
 };
 
 document.getElementById("restart").onclick = () => {
-  clearInterval(gameInterval);
   setupGame();
-  const speed = Number(document.getElementById("speed").value);
-  gameInterval = setInterval(update, speed);
+  startGameLoop();
+  updateStatus("Game restarted.");
   updateSoundSettings();
   updateBGM();
 };
 
 document.getElementById("pauseBtn").onclick = () => {
-  if (!gameInterval || isGameOver || isWin || inCountdown) return;
+  if ((!isGameRunning && !animationFrameId) || isGameOver || isWin || inCountdown) return;
   if (paused) {
     resumeGameplayFromCurrentState();
     return;
@@ -1123,7 +1372,9 @@ document.getElementById("continueAfterRedoBtn").onclick = () => {
   if (!stagedRedoFromGameOver) return;
   continueModal.style.display = "none";
   stagedRedoFromGameOver = false;
-  resumeGameplayFromCurrentState();
+  isGameOver = false;
+  isGameRunning = false;
+  startCountdownThenResume();
 };
 
 document.getElementById("buyRedoBtn").onclick = () => {
@@ -1132,9 +1383,20 @@ document.getElementById("buyRedoBtn").onclick = () => {
   updateRedoText();
 };
 
+document.querySelectorAll(".touch-btn").forEach((button) => {
+  const dir = button.getAttribute("data-dir");
+  button.addEventListener("click", () => queueDirectionByName(dir));
+});
+
+document.getElementById("speed").addEventListener("change", () => {
+  refreshMoveInterval();
+  updateStatus("Speed setting updated.");
+});
+
 /* INITIAL */
 updateSoundSettings();
 updateKeysDisplay();
+updateHighScoreDisplay();
 </script>
 
 </body>
