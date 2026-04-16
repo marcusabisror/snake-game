@@ -100,18 +100,39 @@
     }
 
     #progress-fill {
+      position: relative;
       height: 100%;
       width: 0%;
       border-radius: inherit;
       background:
         linear-gradient(
           to right,
-          #43e97b 0%,
-          #43e97b 78%,
-          #00c853 78%,
-          #00c853 100%
+          #2ecc71 0%,
+          #2ecc71 70%,
+          #00e5ff 100%
         );
       transition: width 120ms linear;
+      box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.28);
+    }
+
+    #progress-fill::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translate(45%, -50%);
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #00e5ff;
+      border: 2px solid #00363f;
+      box-sizing: border-box;
+      opacity: 0;
+      transition: opacity 120ms linear;
+    }
+
+    #progress-fill.active::after {
+      opacity: 1;
     }
 
     #keysDisplay { font-size: 14px; color: #ddd; }
@@ -651,9 +672,7 @@ bgmToggle.onchange = () => {
 let canvas, ctx;
 let scale, rows, cols;
 let snake, food, dx, dy;
-let animationFrameId = null;
-let lastFrameTime = 0;
-let accumulatedTime = 0;
+let gameTimerId = null;
 let score = 0;
 let highScore = 0;
 let boardSize = 20;
@@ -736,10 +755,17 @@ function refreshMoveInterval() {
 }
 
 function stopGameLoop() {
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
+  if (gameTimerId) {
+    clearInterval(gameTimerId);
+    gameTimerId = null;
   }
+}
+
+function syncGameLoopSpeed() {
+  if (!isGameRunning || paused || inCountdown || isGameOver || isWin) return;
+  if (!gameTimerId) return;
+  clearInterval(gameTimerId);
+  gameTimerId = setInterval(update, moveIntervalMs);
 }
 
 function refreshCanvasColors() {
@@ -794,7 +820,9 @@ function getProgressPercent() {
 function updateProgressDisplay() {
   const progressPercent = getProgressPercent();
   document.getElementById("score-display").innerText = `Score: ${score}`;
-  document.getElementById("progress-fill").style.width = `${progressPercent}%`;
+  const progressFill = document.getElementById("progress-fill");
+  progressFill.style.width = `${progressPercent}%`;
+  progressFill.classList.toggle("active", progressPercent > 0);
 }
 
 function setupGame() {
@@ -821,9 +849,6 @@ function setupGame() {
   isWin = false;
   inCountdown = false;
   stopCelebration();
-  lastFrameTime = 0;
-  accumulatedTime = 0;
-
   continuesUsed = 0;
   maxContinues = getMaxContinues(boardSize);
 
@@ -929,7 +954,7 @@ function setPaused(value) {
   document.getElementById("pause-overlay").style.display = paused ? "block" : "none";
   document.getElementById("pauseBtn").innerText = paused ? "Resume" : "Pause";
 
-  if (paused && !isGameOver && !isWin && !inCountdown && (isGameRunning || animationFrameId)) {
+  if (paused && !isGameOver && !isWin && !inCountdown && isGameRunning) {
     redoSincePauseOpened = false;
     updateRedoText();
     pauseModal.style.display = "block";
@@ -940,7 +965,7 @@ function setPaused(value) {
 }
 
 function resumeGameplayFromCurrentState() {
-  if (!paused || isGameOver || isWin || inCountdown || (!isGameRunning && !animationFrameId)) return;
+  if (!paused || isGameOver || isWin || inCountdown || !isGameRunning) return;
   startCountdownThenResume();
 }
 
@@ -985,6 +1010,7 @@ function update() {
     score++;
     saveHighScoreIfNeeded();
     refreshMoveInterval();
+    syncGameLoopSpeed();
     updateProgressDisplay();
     updateStatus(`Nice! Speed ${Math.round(1000 / moveIntervalMs)} moves/sec`);
 
@@ -1008,31 +1034,10 @@ function update() {
   draw();
 }
 
-function gameLoop(timestamp) {
-  if (!lastFrameTime) lastFrameTime = timestamp;
-  const delta = timestamp - lastFrameTime;
-  lastFrameTime = timestamp;
-  accumulatedTime += delta;
-
-  while (accumulatedTime >= moveIntervalMs) {
-    update();
-    accumulatedTime -= moveIntervalMs;
-    if (isGameOver || isWin || !isGameRunning) break;
-  }
-
-  if (isGameRunning || paused || inCountdown) {
-    animationFrameId = requestAnimationFrame(gameLoop);
-  } else {
-    animationFrameId = null;
-  }
-}
-
 function startGameLoop() {
   stopGameLoop();
   isGameRunning = true;
-  lastFrameTime = 0;
-  accumulatedTime = 0;
-  animationFrameId = requestAnimationFrame(gameLoop);
+  gameTimerId = setInterval(update, moveIntervalMs);
 }
 
 function gameOver() {
@@ -1206,7 +1211,7 @@ function queueDirectionByName(directionName) {
 window.addEventListener("keydown", (e) => {
   if (e.key === " ") {
     e.preventDefault();
-    if (!isGameOver && !isWin && !inCountdown && (isGameRunning || animationFrameId)) {
+    if (!isGameOver && !isWin && !inCountdown && isGameRunning) {
       if (paused) {
         resumeGameplayFromCurrentState();
       } else {
@@ -1241,7 +1246,7 @@ document.getElementById("restart").onclick = () => {
 };
 
 document.getElementById("pauseBtn").onclick = () => {
-  if ((!isGameRunning && !animationFrameId) || isGameOver || isWin || inCountdown) return;
+  if (!isGameRunning || isGameOver || isWin || inCountdown) return;
   if (paused) {
     resumeGameplayFromCurrentState();
     return;
@@ -1386,6 +1391,7 @@ document.querySelectorAll(".touch-btn").forEach((button) => {
 
 document.getElementById("speed").addEventListener("change", () => {
   refreshMoveInterval();
+  syncGameLoopSpeed();
   updateStatus("Speed setting updated.");
 });
 
