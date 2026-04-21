@@ -1028,6 +1028,8 @@ const overlaySubtext = document.getElementById("overlay-subtext");
 const screenDim = document.getElementById("screen-dim");
 
 function clearUiTimers() {
+  // Keep transient timers/session callbacks scoped to the active run so
+  // restart/new-game/continue can't be affected by stale async work.
   if (scoreAnimTimeout) {
     clearTimeout(scoreAnimTimeout);
     scoreAnimTimeout = null;
@@ -1341,6 +1343,7 @@ function draw() {
   }
 
   const interpolationEnabled =
+    // Render-only smoothing; gameplay state still advances on fixed update ticks.
     isGameRunning && !paused && !inCountdown && !isGameOver && !isWin && (dx !== 0 || dy !== 0);
   const movementBlend = interpolationEnabled
     ? Math.min(1, Math.max(0, (now - lastStepAt) / Math.max(moveIntervalMs, 1)))
@@ -1526,6 +1529,8 @@ function gameOver() {
 }
 
 function simulateRewardedAd(callback) {
+  // Guard delayed callbacks so ads started in an old session can't mutate
+  // the latest run after restart/new game.
   const tokenAtStart = gameSessionToken;
   const timeoutId = setTimeout(() => {
     rewardAdTimeoutIds = rewardAdTimeoutIds.filter(id => id !== timeoutId);
@@ -1536,6 +1541,8 @@ function simulateRewardedAd(callback) {
 }
 
 function startCountdownThenResume() {
+  // Countdown is a fresh transition boundary: clear lingering feedback/countdown
+  // timers before starting a new 3-2-1 sequence.
   clearUiTimers();
   let value = 3;
   inCountdown = true;
@@ -1902,6 +1909,10 @@ document.getElementById("speed").addEventListener("change", () => {
 document.getElementById("board").addEventListener("change", () => {
   refreshDisplayedHighScoreForSelectedBoard();
   if (!isGameRunning || isGameOver || isWin) {
+    // Board changes outside active play should clear finished-state overlays.
+    isGameOver = false;
+    isWin = false;
+    paused = false;
     clearTransientVisualState();
     continueModal.style.display = "none";
     pauseModal.style.display = "none";
