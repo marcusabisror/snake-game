@@ -1015,6 +1015,9 @@ let foodGlowUntil = 0;
 let scoreAnimTimeout = null;
 let uiAnimTimeout = null;
 let lastEatenCell = null;
+let countdownTimerId = null;
+let gameSessionToken = 0;
+let rewardAdTimeoutIds = [];
 
 const gameWrapper = document.getElementById("game-wrapper");
 const scoreDisplay = document.getElementById("score-display");
@@ -1023,6 +1026,35 @@ const countdownOverlay = document.getElementById("countdown-overlay");
 const gameOverOverlay = document.getElementById("game-over-overlay");
 const overlaySubtext = document.getElementById("overlay-subtext");
 const screenDim = document.getElementById("screen-dim");
+
+function clearUiTimers() {
+  if (scoreAnimTimeout) {
+    clearTimeout(scoreAnimTimeout);
+    scoreAnimTimeout = null;
+  }
+  if (uiAnimTimeout) {
+    clearTimeout(uiAnimTimeout);
+    uiAnimTimeout = null;
+  }
+  if (countdownTimerId) {
+    clearInterval(countdownTimerId);
+    countdownTimerId = null;
+  }
+  rewardAdTimeoutIds.forEach(clearTimeout);
+  rewardAdTimeoutIds = [];
+}
+
+function clearTransientVisualState() {
+  gameWrapper.classList.remove("eat-flash");
+  scoreDisplay.classList.remove("pulse", "flash");
+  countdownOverlay.classList.remove("visible", "countdown-pop");
+  pauseOverlay.classList.remove("visible");
+  screenDim.classList.remove("visible");
+  hideOverlayText();
+  headPopUntil = 0;
+  foodGlowUntil = 0;
+  lastEatenCell = null;
+}
 
 /* CONTINUE / KEYS */
 let eatHistory = [];
@@ -1182,7 +1214,10 @@ function triggerScoreFeedback() {
   scoreDisplay.classList.remove("pulse", "flash");
   void scoreDisplay.offsetWidth;
   scoreDisplay.classList.add("pulse", "flash");
-  scoreAnimTimeout = setTimeout(() => scoreDisplay.classList.remove("pulse", "flash"), 150);
+  scoreAnimTimeout = setTimeout(() => {
+    scoreDisplay.classList.remove("pulse", "flash");
+    scoreAnimTimeout = null;
+  }, 150);
 }
 
 function triggerEatFeedback(headCell) {
@@ -1192,10 +1227,18 @@ function triggerEatFeedback(headCell) {
   lastEatenCell = headCell ? { ...headCell } : null;
   gameWrapper.classList.add("eat-flash");
   if (uiAnimTimeout) clearTimeout(uiAnimTimeout);
-  uiAnimTimeout = setTimeout(() => gameWrapper.classList.remove("eat-flash"), 120);
+  uiAnimTimeout = setTimeout(() => {
+    gameWrapper.classList.remove("eat-flash");
+    uiAnimTimeout = null;
+  }, 120);
 }
 
 function setupGame() {
+  gameSessionToken++;
+  clearUiTimers();
+  clearTransientVisualState();
+  stopCelebration();
+
   canvas = document.getElementById("game");
   ctx = canvas.getContext("2d");
   refreshCanvasColors();
@@ -1219,17 +1262,14 @@ function setupGame() {
   isGameOver = false;
   isWin = false;
   inCountdown = false;
-  stopCelebration();
   continuesUsed = 0;
   maxContinues = getMaxContinues(boardSize);
+  stagedRedoFromGameOver = false;
+  redoSincePauseOpened = false;
 
   updateProgressDisplay();
   updateHighScoreDisplay();
   document.getElementById("restart").style.display = "none";
-  hideOverlayText();
-  pauseOverlay.classList.remove("visible");
-  countdownOverlay.classList.remove("visible", "countdown-pop");
-  screenDim.classList.remove("visible");
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
   updateStatus("Use arrow keys or touch controls. Avoid walls and your tail.");
@@ -1300,7 +1340,11 @@ function draw() {
     ctx.fill();
   }
 
-  const movementBlend = Math.min(1, Math.max(0, (now - lastStepAt) / Math.max(moveIntervalMs, 1)));
+  const interpolationEnabled =
+    isGameRunning && !paused && !inCountdown && !isGameOver && !isWin && (dx !== 0 || dy !== 0);
+  const movementBlend = interpolationEnabled
+    ? Math.min(1, Math.max(0, (now - lastStepAt) / Math.max(moveIntervalMs, 1)))
+    : 1;
   snake.forEach((part, i) => {
     const cellX = part.x * scale;
     const cellY = part.y * scale;
@@ -1337,12 +1381,15 @@ function draw() {
       ctx.lineWidth = Math.max(1, Math.floor(scale * 0.06));
       ctx.strokeRect(drawX, drawY, drawSize, drawSize);
 
-      const eyeSize = Math.max(1.5, scale * 0.09);
+      const headCellX = drawX - inset;
+      const headCellY = drawY - inset;
+      const headScale = drawSize / scale;
+      const eyeSize = Math.max(1.5, scale * 0.09 * Math.max(0.8, headScale));
       const eyeOffset = Math.max(3, scale * 0.25);
       ctx.fillStyle = "#00363f";
       ctx.beginPath();
-      ctx.arc(cellX + eyeOffset, cellY + eyeOffset, eyeSize, 0, Math.PI * 2);
-      ctx.arc(cellX + scale - eyeOffset, cellY + eyeOffset, eyeSize, 0, Math.PI * 2);
+      ctx.arc(headCellX + eyeOffset, headCellY + eyeOffset, eyeSize, 0, Math.PI * 2);
+      ctx.arc(headCellX + scale - eyeOffset, headCellY + eyeOffset, eyeSize, 0, Math.PI * 2);
       ctx.fill();
     }
   });
@@ -1479,13 +1526,22 @@ function gameOver() {
 }
 
 function simulateRewardedAd(callback) {
-  setTimeout(callback, 1000);
+  const tokenAtStart = gameSessionToken;
+  const timeoutId = setTimeout(() => {
+    rewardAdTimeoutIds = rewardAdTimeoutIds.filter(id => id !== timeoutId);
+    if (tokenAtStart !== gameSessionToken) return;
+    callback();
+  }, 1000);
+  rewardAdTimeoutIds.push(timeoutId);
 }
 
 function startCountdownThenResume() {
+  clearUiTimers();
   let value = 3;
   inCountdown = true;
   setPaused(false);
+  hideOverlayText();
+  screenDim.classList.remove("visible");
 
   countdownOverlay.innerText = value;
   countdownOverlay.classList.add("visible");
@@ -1493,7 +1549,7 @@ function startCountdownThenResume() {
   void countdownOverlay.offsetWidth;
   countdownOverlay.classList.add("countdown-pop");
 
-  const timer = setInterval(() => {
+  countdownTimerId = setInterval(() => {
     value--;
 
     if (value > 0) {
@@ -1504,7 +1560,8 @@ function startCountdownThenResume() {
       return;
     }
 
-    clearInterval(timer);
+    clearInterval(countdownTimerId);
+    countdownTimerId = null;
     countdownOverlay.classList.remove("visible", "countdown-pop");
     inCountdown = false;
     isGameOver = false;
@@ -1533,12 +1590,15 @@ function continueGameFromCheckpoint() {
   isWin = false;
   isGameOver = false;
   isGameRunning = false;
+  paused = false;
+  inCountdown = false;
 
   updateProgressDisplay();
-  hideOverlayText();
-  screenDim.classList.remove("visible");
+  clearTransientVisualState();
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
+  previousHeadPosition = { ...snake[0] };
+  lastStepAt = performance.now();
 
   draw();
   startCountdownThenResume();
@@ -1565,8 +1625,8 @@ function winGame() {
 
 function launchCelebration() {
   stopCelebration();
-  spawnConfettiBurst(145);
-  celebrationSpawner = setInterval(() => spawnConfettiBurst(28), 230);
+  spawnConfettiBurst(100);
+  celebrationSpawner = setInterval(() => spawnConfettiBurst(18), 260);
 }
 
 function spawnConfettiBurst(pieceCount = 60) {
@@ -1841,6 +1901,12 @@ document.getElementById("speed").addEventListener("change", () => {
 
 document.getElementById("board").addEventListener("change", () => {
   refreshDisplayedHighScoreForSelectedBoard();
+  if (!isGameRunning || isGameOver || isWin) {
+    clearTransientVisualState();
+    continueModal.style.display = "none";
+    pauseModal.style.display = "none";
+    setPaused(false);
+  }
 });
 
 /* INITIAL */
@@ -1856,6 +1922,16 @@ document.querySelectorAll("button").forEach((button) => {
   button.addEventListener("pointercancel", release);
   button.addEventListener("blur", release);
   button.addEventListener("mouseleave", release);
+  button.addEventListener("keydown", (e) => {
+    if (e.key === " " || e.key === "Enter") button.classList.add("is-pressed");
+  });
+  button.addEventListener("keyup", (e) => {
+    if (e.key === " " || e.key === "Enter") button.classList.remove("is-pressed");
+  });
+});
+
+window.addEventListener("pointerup", () => {
+  document.querySelectorAll("button.is-pressed").forEach((button) => button.classList.remove("is-pressed"));
 });
 </script>
 
