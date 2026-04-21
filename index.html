@@ -83,6 +83,9 @@
       background: linear-gradient(180deg, #2da7b7 0%, #1f8996 100%);
       border-color: #57deed;
       font-weight: 700;
+      font-size: 16px;
+      padding: 12px 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
     }
 
     .secondary-actions {
@@ -373,7 +376,11 @@
       text-align: center;
     }
 
-    #objective-hint { font-size: 14px; color: #a8d2e8; margin-top: -2px; text-align: center; }
+    #objective-hint { font-size: 13px; color: #a8d2e8; opacity: 0.85; margin-top: -2px; text-align: center; }
+
+    .modal-actions button:nth-child(3) {
+      margin-top: 6px;
+    }
 
     #game-wrapper {
       position: relative;
@@ -476,8 +483,9 @@
       }
 
       #top-bar-right {
-        flex-wrap: wrap;
-        justify-content: space-between;
+        flex-wrap: nowrap;
+        flex-direction: column;
+        align-items: flex-start;
       }
 
       #progress-wrapper {
@@ -495,6 +503,10 @@
 
       .secondary-actions button {
         flex: 1;
+      }
+
+      #start {
+        width: 100%;
       }
 
       .modal-content {
@@ -564,7 +576,7 @@
     </div>
 
     <div id="game-status">Press Start to begin.</div>
-    <div id="objective-hint">Goal: Fill the entire board to win.</div>
+    <div id="objective-hint">Fill the board to win.</div>
 
   <div id="game-wrapper">
     <canvas id="game" width="400" height="400"></canvas>
@@ -625,7 +637,7 @@
   <div id="continueModal" class="modal">
     <div class="modal-content">
       <h2>Continue?</h2>
-      <p id="continueText">Jump back before your last red dot.</p>
+      <p id="continueText">Jump back before your last food.</p>
       <p class="modal-help" id="continueSubtext">Choose Continue to resume quickly. Use Redo to step back again.</p>
 
       <div class="modal-actions">
@@ -635,6 +647,7 @@
       <button id="redoFromGameOverKeyBtn" class="modal-btn secondary">↶ Redo (Use Key)</button>
       <button id="continueAfterRedoBtn" class="modal-btn primary" style="display:none;">Continue From Here</button>
       <button id="buyKeyBtn" class="modal-btn warning">Buy Keys</button>
+      <button id="restartFromContinueBtn" class="modal-btn secondary">Restart Game</button>
       </div>
       <button id="endGameBtn" class="modal-btn danger">End Game</button>
     </div>
@@ -663,9 +676,9 @@
         <p><strong>Goal:</strong> Fill the entire board to win.</p>
         <p><strong>Move:</strong> Use arrow keys on desktop or on-screen controls on mobile.</p>
         <p><strong>Pause:</strong> Tap Pause on mobile or press Space on desktop.</p>
-        <p><strong>Rules:</strong> Avoid walls and your snake body. Each red dot gives 1 point.</p>
-        <p><strong>Continue:</strong> Resume from your last checkpoint after a short countdown.</p>
-        <p><strong>Redo:</strong> Step back one checkpoint from Pause or Game Over.</p>
+        <p><strong>Rules:</strong> Avoid walls and your snake body. Each food gives 1 point.</p>
+        <p><strong>Continue:</strong> Resume from your last food after a short countdown.</p>
+        <p><strong>Redo:</strong> Step back one food from Pause or Game Over.</p>
         <p class="modal-help">Watch Ad and Buy Keys are optional extras for continues and redos.</p>
       </div>
 
@@ -1028,7 +1041,7 @@ function setupGame() {
   document.getElementById("countdown-overlay").style.display = "none";
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
-  updateStatus("Use arrow keys (desktop) or on-screen controls (mobile).");
+  updateStatus("Use arrow keys (desktop) or on-screen controls (mobile). Avoid walls and your tail.");
 
   placeFood();
   eatHistory = [cloneState()];
@@ -1224,7 +1237,7 @@ function gameOver() {
   const remaining = maxContinues - continuesUsed;
   const redoRemaining = maxRedos - redosUsed;
   document.getElementById("continueText").innerText =
-    `Back up before your last red dot.`;
+    `Jump back before your last food.`;
   document.getElementById("continueSubtext").innerText =
     `Ad continues left: ${Math.max(remaining, 0)} • Ad redos left: ${Math.max(redoRemaining, 0)}.`;
 
@@ -1454,7 +1467,7 @@ function redoFromGameOver() {
   const remaining = maxContinues - continuesUsed;
   const redoRemaining = maxRedos - redosUsed;
   document.getElementById("continueText").innerText =
-    `Redo applied. Continue when ready.`;
+    `Redo applied. Continue from this food state when ready.`;
   document.getElementById("continueSubtext").innerText =
     `Ad continues left: ${Math.max(remaining, 0)} • Ad redos left: ${Math.max(redoRemaining, 0)}.`;
 
@@ -1493,6 +1506,11 @@ document.getElementById("buyKeysHomeBtn").onclick = () => {
 
 document.getElementById("endGameBtn").onclick = () => {
   continueModal.style.display = "none";
+};
+
+document.getElementById("restartFromContinueBtn").onclick = () => {
+  continueModal.style.display = "none";
+  document.getElementById("restart").click();
 };
 
 document.getElementById("resumeFromModalBtn").onclick = () => {
