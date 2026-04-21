@@ -1008,9 +1008,6 @@ let inCountdown = false;
 let celebrationSpawner = null;
 let activeCelebrationTimers = [];
 let runStartedHighScore = 0;
-let previousHeadPosition = null;
-let lastStepAt = performance.now();
-let headPopUntil = 0;
 let foodGlowUntil = 0;
 let scoreAnimTimeout = null;
 let uiAnimTimeout = null;
@@ -1053,7 +1050,6 @@ function clearTransientVisualState() {
   pauseOverlay.classList.remove("visible");
   screenDim.classList.remove("visible");
   hideOverlayText();
-  headPopUntil = 0;
   foodGlowUntil = 0;
   lastEatenCell = null;
 }
@@ -1224,7 +1220,6 @@ function triggerScoreFeedback() {
 
 function triggerEatFeedback(headCell) {
   const now = performance.now();
-  headPopUntil = now + 110;
   foodGlowUntil = now + 130;
   lastEatenCell = headCell ? { ...headCell } : null;
   gameWrapper.classList.add("eat-flash");
@@ -1281,9 +1276,6 @@ function setupGame() {
   historyCursor = 0;
   redosUsed = 0;
   maxRedos = maxContinues;
-  previousHeadPosition = { ...snake[0] };
-  lastStepAt = performance.now();
-  headPopUntil = 0;
   foodGlowUntil = 0;
   lastEatenCell = null;
 
@@ -1342,57 +1334,28 @@ function draw() {
     ctx.fill();
   }
 
-  const interpolationEnabled =
-    // Render-only smoothing; gameplay state still advances on fixed update ticks.
-    isGameRunning && !paused && !inCountdown && !isGameOver && !isWin && (dx !== 0 || dy !== 0);
-  const movementBlend = interpolationEnabled
-    ? Math.min(1, Math.max(0, (now - lastStepAt) / Math.max(moveIntervalMs, 1)))
-    : 1;
   snake.forEach((part, i) => {
     const cellX = part.x * scale;
     const cellY = part.y * scale;
     const inset = Math.max(1, Math.floor(scale * 0.08));
-    let drawX = cellX + inset;
-    let drawY = cellY + inset;
-    let drawSize = scale - inset * 2;
-
-    if (i === 0 && previousHeadPosition) {
-      const lerpX = (previousHeadPosition.x + (part.x - previousHeadPosition.x) * movementBlend) * scale;
-      const lerpY = (previousHeadPosition.y + (part.y - previousHeadPosition.y) * movementBlend) * scale;
-      drawX = lerpX + inset;
-      drawY = lerpY + inset;
-    }
-
-    if (i === 0 && now < headPopUntil) {
-      const popProgress = (headPopUntil - now) / 110;
-      const bonus = Math.max(0, popProgress * 0.15);
-      drawSize = drawSize * (1 + bonus);
-      drawX -= (drawSize - (scale - inset * 2)) / 2;
-      drawY -= (drawSize - (scale - inset * 2)) / 2;
-      ctx.shadowBlur = Math.max(3, scale * 0.3);
-      ctx.shadowColor = "rgba(255,255,255,0.55)";
-    } else {
-      ctx.shadowBlur = 0;
-    }
+    const drawX = cellX + inset;
+    const drawY = cellY + inset;
+    const drawSize = scale - inset * 2;
 
     ctx.fillStyle = (i === 0) ? "#2cf0ff" : canvasColors.snakeBody;
     ctx.fillRect(drawX, drawY, drawSize, drawSize);
-    ctx.shadowBlur = 0;
 
     if (i === 0) {
       ctx.strokeStyle = "#00363f";
       ctx.lineWidth = Math.max(1, Math.floor(scale * 0.06));
       ctx.strokeRect(drawX, drawY, drawSize, drawSize);
 
-      const headCellX = drawX - inset;
-      const headCellY = drawY - inset;
-      const headScale = drawSize / scale;
-      const eyeSize = Math.max(1.5, scale * 0.09 * Math.max(0.8, headScale));
+      const eyeSize = Math.max(1.5, scale * 0.09);
       const eyeOffset = Math.max(3, scale * 0.25);
       ctx.fillStyle = "#00363f";
       ctx.beginPath();
-      ctx.arc(headCellX + eyeOffset, headCellY + eyeOffset, eyeSize, 0, Math.PI * 2);
-      ctx.arc(headCellX + scale - eyeOffset, headCellY + eyeOffset, eyeSize, 0, Math.PI * 2);
+      ctx.arc(cellX + eyeOffset, cellY + eyeOffset, eyeSize, 0, Math.PI * 2);
+      ctx.arc(cellX + scale - eyeOffset, cellY + eyeOffset, eyeSize, 0, Math.PI * 2);
       ctx.fill();
     }
   });
@@ -1446,7 +1409,6 @@ function update() {
   }
 
   const oldState = cloneState();
-  previousHeadPosition = { ...snake[0] };
   const head = { x: snake[0].x + dx, y: snake[0].y + dy };
 
   if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows) {
@@ -1477,7 +1439,6 @@ function update() {
     else playEatSound();
 
     if (snake.length === cols * rows) {
-      lastStepAt = performance.now();
       draw();
       return winGame();
     }
@@ -1491,7 +1452,6 @@ function update() {
     snake.pop();
   }
 
-  lastStepAt = performance.now();
   draw();
 }
 
@@ -1604,8 +1564,6 @@ function continueGameFromCheckpoint() {
   clearTransientVisualState();
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
-  previousHeadPosition = { ...snake[0] };
-  lastStepAt = performance.now();
 
   draw();
   startCountdownThenResume();
