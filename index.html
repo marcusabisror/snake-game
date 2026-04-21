@@ -310,6 +310,14 @@
     .modal-btn.secondary { background: #1565c0; }
     .modal-btn.warning { background: #8e24aa; }
     .modal-btn.danger { background: #6d4c41; }
+    .modal-btn.restart {
+      background: #444;
+      border: 1px solid #777;
+    }
+    .modal-btn.warning.soft {
+      opacity: 0.84;
+      filter: saturate(0.85);
+    }
 
     #game-over-overlay {
       display: none;
@@ -325,6 +333,21 @@
       pointer-events: none;
       text-align: center;
       width: 90%;
+    }
+
+    #overlay-subtext {
+      display: none;
+      position: absolute;
+      top: 62%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 16px;
+      color: #d8eef9;
+      text-shadow: 0 0 8px rgba(0, 0, 0, 0.85);
+      z-index: 11;
+      pointer-events: none;
+      text-align: center;
+      width: 85%;
     }
 
     #pause-overlay {
@@ -488,6 +511,10 @@
         align-items: flex-start;
       }
 
+      #top-bar-right > div {
+        margin-bottom: 4px;
+      }
+
       #progress-wrapper {
         min-width: 0;
       }
@@ -583,6 +610,7 @@
     <div id="pause-overlay">PAUSED</div>
     <div id="countdown-overlay">3</div>
     <div id="game-over-overlay">GAME OVER</div>
+    <div id="overlay-subtext"></div>
   </div>
 
   <div id="touch-controls" aria-label="On-screen movement controls">
@@ -646,8 +674,8 @@
       <button id="redoFromGameOverAdBtn" class="modal-btn secondary">↶ Redo (Watch Ad)</button>
       <button id="redoFromGameOverKeyBtn" class="modal-btn secondary">↶ Redo (Use Key)</button>
       <button id="continueAfterRedoBtn" class="modal-btn primary" style="display:none;">Continue From Here</button>
-      <button id="buyKeyBtn" class="modal-btn warning">Buy Keys</button>
-      <button id="restartFromContinueBtn" class="modal-btn secondary">Restart Game</button>
+      <button id="restartFromContinueBtn" class="modal-btn restart">Restart Game</button>
+      <button id="buyKeyBtn" class="modal-btn warning soft">Buy Keys</button>
       </div>
       <button id="endGameBtn" class="modal-btn danger">End Game</button>
     </div>
@@ -1041,7 +1069,7 @@ function setupGame() {
   document.getElementById("countdown-overlay").style.display = "none";
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
-  updateStatus("Use arrow keys (desktop) or on-screen controls (mobile). Avoid walls and your tail.");
+  updateStatus("Use arrow keys or touch controls. Avoid walls and your tail.");
 
   placeFood();
   eatHistory = [cloneState()];
