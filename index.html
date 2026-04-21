@@ -30,17 +30,28 @@
     }
 
     #app {
-      width: min(480px, 100%);
+      width: min(880px, 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 10px;
     }
 
+    #pre-game-panel {
+      width: 100%;
+      background: rgba(17, 30, 39, 0.85);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 10px;
+      box-sizing: border-box;
+      display: grid;
+      gap: 10px;
+    }
+
     #controls {
       width: 100%;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 8px;
       margin: 2px 0;
       align-items: center;
@@ -68,6 +79,35 @@
       touch-action: manipulation;
     }
 
+    .primary-btn {
+      background: linear-gradient(180deg, #2da7b7 0%, #1f8996 100%);
+      border-color: #57deed;
+      font-weight: 700;
+      font-size: 16px;
+      padding: 12px 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    }
+
+    .secondary-actions {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-start;
+      align-items: center;
+    }
+
+    .shop-btn {
+      background: transparent;
+      border-color: #365666;
+      color: #9dc2d7;
+      opacity: 0.78;
+    }
+
+    .assistive-note {
+      font-size: 12px;
+      color: #a7c9dc;
+    }
 
     #top-bar {
       width: 100%;
@@ -166,6 +206,7 @@
     }
 
     #keysDisplay { font-size: 14px; color: #ddd; }
+    #keysHelp { font-size: 12px; color: #9ec2d6; margin-top: 2px; }
 
     .settings-btn {
       padding: 8px 16px;
@@ -196,6 +237,11 @@
       border: 1px solid var(--panel-border);
       box-shadow: 0 0 20px rgba(0,0,0,0.5);
     }
+
+    .modal-content h2 { margin: 0 0 8px; }
+    .modal-content p { margin: 8px 0; line-height: 1.4; }
+    .modal-help { color: #b7d7e8; font-size: 13px; }
+    .modal-actions { display: grid; gap: 8px; margin-top: 10px; }
 
     #howToPlayModal .modal-content {
       max-height: 75vh;
@@ -252,7 +298,6 @@
 
     .close-btn,
     .modal-btn {
-      margin-top: 10px;
       padding: 8px 16px;
       background: #555;
       border: none;
@@ -265,6 +310,14 @@
     .modal-btn.secondary { background: #1565c0; }
     .modal-btn.warning { background: #8e24aa; }
     .modal-btn.danger { background: #6d4c41; }
+    .modal-btn.restart {
+      background: #444;
+      border: 1px solid #777;
+    }
+    .modal-btn.warning.soft {
+      opacity: 0.84;
+      filter: saturate(0.85);
+    }
 
     #game-over-overlay {
       display: none;
@@ -280,6 +333,21 @@
       pointer-events: none;
       text-align: center;
       width: 90%;
+    }
+
+    #overlay-subtext {
+      display: none;
+      position: absolute;
+      top: 62%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 16px;
+      color: #d8eef9;
+      text-shadow: 0 0 8px rgba(0, 0, 0, 0.85);
+      z-index: 11;
+      pointer-events: none;
+      text-align: center;
+      width: 85%;
     }
 
     #pause-overlay {
@@ -329,6 +397,12 @@
       color: #b4d8eb;
       font-size: 14px;
       text-align: center;
+    }
+
+    #objective-hint { font-size: 13px; color: #a8d2e8; opacity: 0.85; margin-top: -2px; text-align: center; }
+
+    #continueModal .modal-actions button:nth-child(3) {
+      margin-top: 6px;
     }
 
     #game-wrapper {
@@ -386,7 +460,29 @@
 
     @media (min-width: 701px) {
       #controls {
-        grid-template-columns: auto 1fr auto 1fr repeat(4, auto);
+        grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) minmax(180px, 1fr);
+      }
+
+      #desktop-layout {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 230px minmax(300px, 1fr) 230px;
+        align-items: start;
+        gap: 12px;
+      }
+
+      #game-wrapper {
+        grid-column: 2;
+        justify-self: center;
+      }
+
+      #top-bar {
+        grid-column: 1 / 4;
+      }
+
+      #touch-controls {
+        grid-column: 2;
+        justify-self: center;
       }
     }
 
@@ -396,7 +492,7 @@
       }
 
       #controls {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr;
       }
 
       #controls label {
@@ -410,8 +506,13 @@
       }
 
       #top-bar-right {
-        flex-wrap: wrap;
-        justify-content: space-between;
+        flex-wrap: nowrap;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      #top-bar-right > div {
+        margin-bottom: 4px;
       }
 
       #progress-wrapper {
@@ -426,6 +527,20 @@
       #touch-controls {
         display: block;
       }
+
+      .secondary-actions button {
+        flex: 1;
+      }
+
+      #start {
+        width: 100%;
+      }
+
+      .modal-content {
+        width: min(92vw, 340px);
+        margin: 5% auto;
+        padding: 16px;
+      }
     }
 
   </style>
@@ -434,52 +549,68 @@
 <body>
   <div id="app">
 
-  <div id="controls">
-    <label>Speed:</label>
-    <select id="speed">
-      <option value="300" selected>Regular</option>
-      <option value="200">Fast</option>
-    </select>
+  <div id="pre-game-panel">
+    <div id="controls">
+      <button id="start" class="primary-btn">Start Game</button>
 
-    <label>Board Size:</label>
-    <select id="board">
-      <option value="16" selected>16×16</option>
-      <option value="14">14×14</option>
-      <option value="10">10×10</option>
-      <option value="8">8×8</option>
-      <option value="4">4x4 (Practice)</option>
-    </select>
-
-    <button id="start">Start Game</button>
-    <button id="howToPlayBtn">How To Play</button>
-    <button id="buyKeysHomeBtn">Buy Keys</button>
-    <button id="soundSettingsBtn" class="settings-btn">Sound</button>
-  </div>
-
-  <div id="top-bar">
-    <div id="progress-wrapper">
       <div>
-        <div id="score-display">Score: 0</div>
-        <div id="high-score-display">Best: 0</div>
+        <label>Board Size:</label>
+        <select id="board">
+          <option value="16" selected>16×16</option>
+          <option value="14">14×14</option>
+          <option value="10">10×10</option>
+          <option value="8">8×8</option>
+          <option value="4">4×4 (Practice)</option>
+        </select>
       </div>
-      <div id="progress-tube">
-        <div id="progress-fill"></div>
+
+      <div>
+        <label>Speed:</label>
+        <select id="speed">
+          <option value="300" selected>Regular</option>
+          <option value="200">Fast</option>
+        </select>
       </div>
     </div>
-    <div id="top-bar-right">
-      <div id="keysDisplay">Keys: 0</div>
-      <button id="pauseBtn">Pause</button>
-      <button id="restart" style="display:none;">Restart</button>
+
+    <div class="secondary-actions">
+      <button id="howToPlayBtn">How To Play</button>
+      <button id="soundSettingsBtn" class="settings-btn">Sound</button>
+      <button id="buyKeysHomeBtn" class="shop-btn">Buy Keys</button>
+      <span class="assistive-note">Optional extra continues and redos.</span>
     </div>
   </div>
 
-  <div id="game-status">Press Start to begin.</div>
+  <div id="desktop-layout">
+    <div id="top-bar">
+      <div id="progress-wrapper">
+        <div>
+          <div id="score-display">Score: 0</div>
+          <div id="high-score-display">Best: 0</div>
+        </div>
+        <div id="progress-tube">
+          <div id="progress-fill"></div>
+        </div>
+      </div>
+      <div id="top-bar-right">
+        <div>
+          <div id="keysDisplay">Keys: 0</div>
+          <div id="keysHelp">Optional extra continues and redos.</div>
+        </div>
+        <button id="pauseBtn">Pause</button>
+        <button id="restart" style="display:none;">Restart</button>
+      </div>
+    </div>
+
+    <div id="game-status">Press Start to begin.</div>
+    <div id="objective-hint">Fill the board to win.</div>
 
   <div id="game-wrapper">
     <canvas id="game" width="400" height="400"></canvas>
     <div id="pause-overlay">PAUSED</div>
     <div id="countdown-overlay">3</div>
     <div id="game-over-overlay">GAME OVER</div>
+    <div id="overlay-subtext"></div>
   </div>
 
   <div id="touch-controls" aria-label="On-screen movement controls">
@@ -496,6 +627,7 @@
       <button class="touch-btn" data-dir="down" aria-label="Move down">↓</button>
       <div></div>
     </div>
+  </div>
   </div>
 
   <div id="soundModal" class="modal">
@@ -533,14 +665,18 @@
   <div id="continueModal" class="modal">
     <div class="modal-content">
       <h2>Continue?</h2>
-      <p id="continueText">Go back to before your last food.</p>
+      <p id="continueText">Jump back before your last food.</p>
+      <p class="modal-help" id="continueSubtext">Choose Continue to resume quickly. Use Redo to step back again.</p>
 
-      <button id="watchAdBtn" class="modal-btn primary">Continue Watch Ad</button><br>
-      <button id="useKeyBtn" class="modal-btn secondary">Use Key</button><br>
-      <button id="redoFromGameOverAdBtn" class="modal-btn secondary">↶ Redo Watch Ad</button><br>
-      <button id="redoFromGameOverKeyBtn" class="modal-btn secondary">↶ Redo Use Key</button><br>
-      <button id="continueAfterRedoBtn" class="modal-btn primary" style="display:none;">Continue</button><br>
-      <button id="buyKeyBtn" class="modal-btn warning">Buy Keys</button><br>
+      <div class="modal-actions">
+      <button id="watchAdBtn" class="modal-btn primary">Continue (Watch Ad)</button>
+      <button id="useKeyBtn" class="modal-btn secondary">Continue (Use Key)</button>
+      <button id="redoFromGameOverAdBtn" class="modal-btn secondary">↶ Redo (Watch Ad)</button>
+      <button id="redoFromGameOverKeyBtn" class="modal-btn secondary">↶ Redo (Use Key)</button>
+      <button id="continueAfterRedoBtn" class="modal-btn primary" style="display:none;">Continue From Here</button>
+      <button id="restartFromContinueBtn" class="modal-btn restart">Restart Game</button>
+      <button id="buyKeyBtn" class="modal-btn warning soft">Buy Keys</button>
+      </div>
       <button id="endGameBtn" class="modal-btn danger">End Game</button>
     </div>
   </div>
@@ -548,46 +684,31 @@
   <div id="pauseModal" class="modal">
     <div class="modal-content">
       <h2>Paused</h2>
-      <p id="redoText">Redo takes you back to before the last red dot was eaten.</p>
+      <p id="redoText">Redo steps back one food.</p>
+      <p class="modal-help">Tap Pause on mobile or press Space on desktop to return here quickly.</p>
 
-      <button id="resumeFromModalBtn" class="modal-btn primary">Resume</button><br>
-      <button id="pauseSoundBtn" class="modal-btn secondary">Sound Settings</button><br>
-      <button id="redoAdBtn" class="modal-btn secondary">↶ Redo Watch Ad</button><br>
-      <button id="redoKeyBtn" class="modal-btn secondary">↶ Redo Use Key</button><br>
+      <div class="modal-actions">
+      <button id="resumeFromModalBtn" class="modal-btn primary">Resume</button>
+      <button id="pauseSoundBtn" class="modal-btn secondary">Sound Settings</button>
+      <button id="redoAdBtn" class="modal-btn secondary">↶ Redo (Watch Ad)</button>
+      <button id="redoKeyBtn" class="modal-btn secondary">↶ Redo (Use Key)</button>
       <button id="buyRedoBtn" class="modal-btn warning">Buy Keys (Continue + Redo)</button>
+      </div>
     </div>
   </div>
 
   <div id="howToPlayModal" class="modal">
     <div class="modal-content">
       <h2>How To Play</h2>
-      <p style="line-height:1.5; text-align:left;">
-        <strong>Objective:</strong><br>
-        Cover the whole grid by eating every red dot and growing the snake.<br><br>
-
-        <strong>Controls:</strong><br>
-        Use the arrow keys to move.<br>
-        Press Pause or Space bar to pause and resume.<br><br>
-
-        <strong>Rules:</strong><br>
-        Do not hit the wall.<br>
-        Do not hit your own body.<br>
-        Each red dot gives 1 point.<br>
-        Every 10 points uses a different sound.<br><br>
-
-        <strong>Continue:</strong><br>
-        A continue takes you back to the game state from before the last red dot was eaten.<br>
-        Then the game shows a 3 second countdown and resumes automatically from that exact same state.<br>
-        Continue can be used by watching an ad, or by spending a key.<br><br>
-
-        <strong>Redo (from Pause popup):</strong><br>
-        Press Pause (or Space bar) to open the pause popup, then press the ↶ Redo button.<br>
-        Redo also returns to the state from before the last red dot was eaten, with the red dot back in the same place.<br>
-        You can press redo repeatedly to go back eat-by-eat until your first eat of the game.<br>
-        Ad redos per game are the same count as ad continues for that board size.<br>
-        Keys are shared power: the same keys can be used for both Continue and Redo.<br>
-        You can buy keys anytime, and buying keys gives more uses for both Continue and Redo.
-      </p>
+      <div style="line-height:1.45; text-align:left;">
+        <p><strong>Goal:</strong> Fill the entire board to win.</p>
+        <p><strong>Move:</strong> Use arrow keys on desktop or on-screen controls on mobile.</p>
+        <p><strong>Pause:</strong> Tap Pause on mobile or press Space on desktop.</p>
+        <p><strong>Rules:</strong> Avoid walls and your snake body. Each food gives 1 point.</p>
+        <p><strong>Continue:</strong> Resume from your last food after a short countdown.</p>
+        <p><strong>Redo:</strong> Step back one food from Pause or Game Over.</p>
+        <p class="modal-help">Watch Ad and Buy Keys are optional extras for continues and redos.</p>
+      </div>
 
       <button id="closeHowToPlayBtn" class="close-btn">Close</button>
     </div>
@@ -948,7 +1069,7 @@ function setupGame() {
   document.getElementById("countdown-overlay").style.display = "none";
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
-  updateStatus("Use arrows or touch controls. Avoid walls and your tail.");
+  updateStatus("Use arrow keys or touch controls. Avoid walls and your tail.");
 
   placeFood();
   eatHistory = [cloneState()];
@@ -1034,7 +1155,7 @@ function draw() {
 function updateRedoText() {
   const remaining = maxRedos - redosUsed;
   document.getElementById("redoText").innerText =
-    `Redo takes you back to before the last red dot was eaten. Ad redos left: ${Math.max(remaining, 0)}. Keys can also be used for redo.`;
+    `Redo steps back one food. Ad redos left: ${Math.max(remaining, 0)}.`;
 }
 
 function setPaused(value) {
@@ -1144,7 +1265,9 @@ function gameOver() {
   const remaining = maxContinues - continuesUsed;
   const redoRemaining = maxRedos - redosUsed;
   document.getElementById("continueText").innerText =
-    `Go back to before the last red dot. Ad continues left: ${Math.max(remaining, 0)}. Ad redos left: ${Math.max(redoRemaining, 0)}.`;
+    `Jump back before your last food.`;
+  document.getElementById("continueSubtext").innerText =
+    `Ad continues left: ${Math.max(remaining, 0)} • Ad redos left: ${Math.max(redoRemaining, 0)}.`;
 
   stagedRedoFromGameOver = false;
   document.getElementById("continueAfterRedoBtn").style.display = "none";
@@ -1372,7 +1495,9 @@ function redoFromGameOver() {
   const remaining = maxContinues - continuesUsed;
   const redoRemaining = maxRedos - redosUsed;
   document.getElementById("continueText").innerText =
-    `Redo applied. You can use redo again or press Continue. Ad continues left: ${Math.max(remaining, 0)}. Ad redos left: ${Math.max(redoRemaining, 0)}.`;
+    `Redo applied. Continue from this food state when ready.`;
+  document.getElementById("continueSubtext").innerText =
+    `Ad continues left: ${Math.max(remaining, 0)} • Ad redos left: ${Math.max(redoRemaining, 0)}.`;
 
   draw();
 }
@@ -1409,6 +1534,11 @@ document.getElementById("buyKeysHomeBtn").onclick = () => {
 
 document.getElementById("endGameBtn").onclick = () => {
   continueModal.style.display = "none";
+};
+
+document.getElementById("restartFromContinueBtn").onclick = () => {
+  continueModal.style.display = "none";
+  document.getElementById("restart").click();
 };
 
 document.getElementById("resumeFromModalBtn").onclick = () => {
