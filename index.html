@@ -77,6 +77,14 @@
     button {
       cursor: pointer;
       touch-action: manipulation;
+      transition: transform 90ms ease, filter 120ms ease, box-shadow 120ms ease;
+      will-change: transform;
+    }
+
+    button:active,
+    button.is-pressed {
+      transform: scale(0.97);
+      filter: brightness(1.08);
     }
 
     .primary-btn {
@@ -151,6 +159,16 @@
     #score-display {
       font-size: 17px;
       min-width: 86px;
+      transform-origin: left center;
+    }
+
+    #score-display.pulse {
+      animation: score-pop 140ms ease-out;
+    }
+
+    #score-display.flash {
+      color: #ffffff;
+      text-shadow: 0 0 12px rgba(77, 208, 225, 0.75);
     }
 
     #high-score-display {
@@ -320,7 +338,9 @@
     }
 
     #game-over-overlay {
-      display: none;
+      display: block;
+      opacity: 0;
+      visibility: hidden;
       position: absolute;
       top: 50%;
       left: 50%;
@@ -333,10 +353,22 @@
       pointer-events: none;
       text-align: center;
       width: 90%;
+      transition: opacity 180ms ease, visibility 180ms ease;
+    }
+
+    #game-over-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    #game-over-overlay.show-animate {
+      animation: overlay-pop 220ms ease-out;
     }
 
     #overlay-subtext {
-      display: none;
+      display: block;
+      opacity: 0;
+      visibility: hidden;
       position: absolute;
       top: 62%;
       left: 50%;
@@ -348,10 +380,22 @@
       pointer-events: none;
       text-align: center;
       width: 85%;
+      transition: opacity 180ms ease, visibility 180ms ease;
+    }
+
+    #overlay-subtext.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    #overlay-subtext.show-animate {
+      animation: overlay-fade 220ms ease-out;
     }
 
     #pause-overlay {
-      display: none;
+      display: block;
+      opacity: 0;
+      visibility: hidden;
       position: absolute;
       top: 15px;
       left: 50%;
@@ -365,10 +409,19 @@
       background: rgba(0,0,0,0.35);
       padding: 6px 12px;
       border-radius: 8px;
+      transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+    }
+
+    #pause-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) scale(1);
     }
 
     #countdown-overlay {
-      display: none;
+      display: block;
+      opacity: 0;
+      visibility: hidden;
       position: absolute;
       top: 50%;
       left: 50%;
@@ -379,6 +432,58 @@
       text-shadow: 0 0 18px black;
       z-index: 15;
       pointer-events: none;
+      transition: opacity 120ms ease, visibility 120ms ease;
+    }
+
+    #countdown-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    #countdown-overlay.countdown-pop {
+      animation: countdown-pop 260ms cubic-bezier(.19,1.05,.34,1);
+    }
+
+    #screen-dim {
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      pointer-events: none;
+      background: radial-gradient(circle at center, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.55) 100%);
+      opacity: 0;
+      transition: opacity 180ms ease;
+      z-index: 8;
+    }
+
+    #screen-dim.visible {
+      opacity: 1;
+    }
+
+    #game-wrapper.eat-flash {
+      filter: brightness(1.1) saturate(1.15);
+      transition: filter 110ms ease;
+    }
+
+    @keyframes score-pop {
+      0% { transform: scale(1); }
+      45% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes overlay-pop {
+      0% { transform: translate(-50%, -50%) scale(0.92); opacity: 0; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+
+    @keyframes overlay-fade {
+      0% { transform: translate(-50%, -45%); opacity: 0; }
+      100% { transform: translate(-50%, -50%); opacity: 1; }
+    }
+
+    @keyframes countdown-pop {
+      0% { transform: translate(-50%, -50%) scale(0.76); opacity: 0.35; }
+      50% { transform: translate(-50%, -50%) scale(1.14); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
     }
 
     .confetti-piece {
@@ -607,6 +712,7 @@
 
   <div id="game-wrapper">
     <canvas id="game" width="400" height="400"></canvas>
+    <div id="screen-dim"></div>
     <div id="pause-overlay">PAUSED</div>
     <div id="countdown-overlay">3</div>
     <div id="game-over-overlay">GAME OVER</div>
@@ -901,6 +1007,52 @@ let isWin = false;
 let inCountdown = false;
 let celebrationSpawner = null;
 let activeCelebrationTimers = [];
+let runStartedHighScore = 0;
+let foodGlowUntil = 0;
+let scoreAnimTimeout = null;
+let uiAnimTimeout = null;
+let lastEatenCell = null;
+let countdownTimerId = null;
+let gameSessionToken = 0;
+let rewardAdTimeoutIds = [];
+
+const gameWrapper = document.getElementById("game-wrapper");
+const scoreDisplay = document.getElementById("score-display");
+const pauseOverlay = document.getElementById("pause-overlay");
+const countdownOverlay = document.getElementById("countdown-overlay");
+const gameOverOverlay = document.getElementById("game-over-overlay");
+const overlaySubtext = document.getElementById("overlay-subtext");
+const screenDim = document.getElementById("screen-dim");
+
+function clearUiTimers() {
+  // Keep transient timers/session callbacks scoped to the active run so
+  // restart/new-game/continue can't be affected by stale async work.
+  if (scoreAnimTimeout) {
+    clearTimeout(scoreAnimTimeout);
+    scoreAnimTimeout = null;
+  }
+  if (uiAnimTimeout) {
+    clearTimeout(uiAnimTimeout);
+    uiAnimTimeout = null;
+  }
+  if (countdownTimerId) {
+    clearInterval(countdownTimerId);
+    countdownTimerId = null;
+  }
+  rewardAdTimeoutIds.forEach(clearTimeout);
+  rewardAdTimeoutIds = [];
+}
+
+function clearTransientVisualState() {
+  gameWrapper.classList.remove("eat-flash");
+  scoreDisplay.classList.remove("pulse", "flash");
+  countdownOverlay.classList.remove("visible", "countdown-pop");
+  pauseOverlay.classList.remove("visible");
+  screenDim.classList.remove("visible");
+  hideOverlayText();
+  foodGlowUntil = 0;
+  lastEatenCell = null;
+}
 
 /* CONTINUE / KEYS */
 let eatHistory = [];
@@ -1028,19 +1180,68 @@ function getProgressPercent() {
 
 function updateProgressDisplay() {
   const progressPercent = getProgressPercent();
-  document.getElementById("score-display").innerText = `Score: ${score}`;
+  scoreDisplay.innerText = `Score: ${score}`;
   const progressFill = document.getElementById("progress-fill");
   progressFill.style.width = `${progressPercent}%`;
   progressFill.classList.toggle("active", progressPercent > 0);
 }
 
+function showOverlayText(mainText, subText = "") {
+  gameOverOverlay.innerText = mainText;
+  gameOverOverlay.classList.add("visible", "show-animate");
+  gameOverOverlay.addEventListener("animationend", () => gameOverOverlay.classList.remove("show-animate"), { once: true });
+
+  if (subText) {
+    overlaySubtext.innerText = subText;
+    overlaySubtext.classList.add("visible", "show-animate");
+    overlaySubtext.addEventListener("animationend", () => overlaySubtext.classList.remove("show-animate"), { once: true });
+  } else {
+    overlaySubtext.classList.remove("visible", "show-animate");
+    overlaySubtext.innerText = "";
+  }
+}
+
+function hideOverlayText() {
+  gameOverOverlay.classList.remove("visible", "show-animate");
+  overlaySubtext.classList.remove("visible", "show-animate");
+  overlaySubtext.innerText = "";
+}
+
+function triggerScoreFeedback() {
+  if (scoreAnimTimeout) clearTimeout(scoreAnimTimeout);
+  scoreDisplay.classList.remove("pulse", "flash");
+  void scoreDisplay.offsetWidth;
+  scoreDisplay.classList.add("pulse", "flash");
+  scoreAnimTimeout = setTimeout(() => {
+    scoreDisplay.classList.remove("pulse", "flash");
+    scoreAnimTimeout = null;
+  }, 150);
+}
+
+function triggerEatFeedback(headCell) {
+  foodGlowUntil = performance.now() + 130;
+  lastEatenCell = headCell ? { ...headCell } : null;
+  gameWrapper.classList.add("eat-flash");
+  if (uiAnimTimeout) clearTimeout(uiAnimTimeout);
+  uiAnimTimeout = setTimeout(() => {
+    gameWrapper.classList.remove("eat-flash");
+    uiAnimTimeout = null;
+  }, 120);
+}
+
 function setupGame() {
+  gameSessionToken++;
+  clearUiTimers();
+  clearTransientVisualState();
+  stopCelebration();
+
   canvas = document.getElementById("game");
   ctx = canvas.getContext("2d");
   refreshCanvasColors();
 
   boardSize = Number(document.getElementById("board").value);
   highScore = loadHighScoreForBoard(boardSize);
+  runStartedHighScore = highScore;
   scale = 400 / boardSize;
   rows = cols = boardSize;
 
@@ -1057,16 +1258,14 @@ function setupGame() {
   isGameOver = false;
   isWin = false;
   inCountdown = false;
-  stopCelebration();
   continuesUsed = 0;
   maxContinues = getMaxContinues(boardSize);
+  stagedRedoFromGameOver = false;
+  redoSincePauseOpened = false;
 
   updateProgressDisplay();
   updateHighScoreDisplay();
   document.getElementById("restart").style.display = "none";
-  document.getElementById("game-over-overlay").style.display = "none";
-  document.getElementById("pause-overlay").style.display = "none";
-  document.getElementById("countdown-overlay").style.display = "none";
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
   updateStatus("Use arrow keys or touch controls. Avoid walls and your tail.");
@@ -1076,6 +1275,8 @@ function setupGame() {
   historyCursor = 0;
   redosUsed = 0;
   maxRedos = maxContinues;
+  foodGlowUntil = 0;
+  lastEatenCell = null;
 
   draw();
   updateKeysDisplay();
@@ -1112,8 +1313,15 @@ function drawGrid() {
 }
 
 function draw() {
+  const now = performance.now();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawGrid();
+
+  if (lastEatenCell && now < foodGlowUntil) {
+    const glowProgress = (foodGlowUntil - now) / 130;
+    ctx.fillStyle = `rgba(255, 235, 120, ${Math.max(0, glowProgress * 0.5)})`;
+    ctx.fillRect(lastEatenCell.x * scale, lastEatenCell.y * scale, scale, scale);
+  }
 
   if (food) {
     const cx = (food.x * scale) + scale / 2;
@@ -1133,7 +1341,7 @@ function draw() {
     const drawY = cellY + inset;
     const drawSize = scale - inset * 2;
 
-    ctx.fillStyle = (i === 0) ? canvasColors.snakeHead : canvasColors.snakeBody;
+    ctx.fillStyle = (i === 0) ? "#2cf0ff" : canvasColors.snakeBody;
     ctx.fillRect(drawX, drawY, drawSize, drawSize);
 
     if (i === 0) {
@@ -1160,7 +1368,8 @@ function updateRedoText() {
 
 function setPaused(value) {
   paused = value;
-  document.getElementById("pause-overlay").style.display = paused ? "block" : "none";
+  pauseOverlay.classList.toggle("visible", paused);
+  screenDim.classList.toggle("visible", paused || isGameOver || isWin);
   document.getElementById("pauseBtn").innerText = paused ? "Resume" : "Pause";
 
   if (paused && !isGameOver && !isWin && !inCountdown && isGameRunning) {
@@ -1217,6 +1426,8 @@ function update() {
     historyCursor = eatHistory.length - 1;
 
     score++;
+    triggerScoreFeedback();
+    triggerEatFeedback(head);
     saveHighScoreIfNeeded();
     refreshMoveInterval();
     syncGameLoopSpeed();
@@ -1258,8 +1469,9 @@ function gameOver() {
 
   document.getElementById("restart").style.display = "block";
   playGameOverSound();
-  document.getElementById("game-over-overlay").innerText = "GAME OVER";
-  document.getElementById("game-over-overlay").style.display = "block";
+  const isNewBest = score > runStartedHighScore;
+  showOverlayText("GAME OVER", isNewBest ? "New Best!" : "");
+  screenDim.classList.add("visible");
   updateStatus("Game over. Continue or restart.");
 
   const remaining = maxContinues - continuesUsed;
@@ -1276,31 +1488,52 @@ function gameOver() {
 }
 
 function simulateRewardedAd(callback) {
-  setTimeout(callback, 1000);
+  // Guard delayed callbacks so ads started in an old session can't mutate
+  // the latest run after restart/new game.
+  const tokenAtStart = gameSessionToken;
+  const timeoutId = setTimeout(() => {
+    rewardAdTimeoutIds = rewardAdTimeoutIds.filter(id => id !== timeoutId);
+    if (tokenAtStart !== gameSessionToken) return;
+    callback();
+  }, 1000);
+  rewardAdTimeoutIds.push(timeoutId);
 }
 
 function startCountdownThenResume() {
-  const countdown = document.getElementById("countdown-overlay");
+  // Countdown is a fresh transition boundary: clear lingering feedback/countdown
+  // timers before starting a new 3-2-1 sequence.
+  clearUiTimers();
   let value = 3;
   inCountdown = true;
   setPaused(false);
+  hideOverlayText();
+  screenDim.classList.remove("visible");
 
-  countdown.innerText = value;
-  countdown.style.display = "block";
+  countdownOverlay.innerText = value;
+  countdownOverlay.classList.add("visible");
+  countdownOverlay.classList.remove("countdown-pop");
+  void countdownOverlay.offsetWidth;
+  countdownOverlay.classList.add("countdown-pop");
 
-  const timer = setInterval(() => {
+  countdownTimerId = setInterval(() => {
     value--;
 
     if (value > 0) {
-      countdown.innerText = value;
+      countdownOverlay.innerText = value;
+      countdownOverlay.classList.remove("countdown-pop");
+      void countdownOverlay.offsetWidth;
+      countdownOverlay.classList.add("countdown-pop");
       return;
     }
 
-    clearInterval(timer);
-    countdown.style.display = "none";
+    clearInterval(countdownTimerId);
+    countdownTimerId = null;
+    countdownOverlay.classList.remove("visible", "countdown-pop");
     inCountdown = false;
     isGameOver = false;
     isGameRunning = true;
+    hideOverlayText();
+    screenDim.classList.remove("visible");
     refreshMoveInterval();
     updateStatus("Back in. Stay sharp.");
     startGameLoop();
@@ -1323,12 +1556,13 @@ function continueGameFromCheckpoint() {
   isWin = false;
   isGameOver = false;
   isGameRunning = false;
+  paused = false;
+  inCountdown = false;
 
   updateProgressDisplay();
-  document.getElementById("game-over-overlay").style.display = "none";
+  clearTransientVisualState();
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
-
   draw();
   startCountdownThenResume();
 }
@@ -1343,8 +1577,8 @@ function winGame() {
   pauseModal.style.display = "none";
 
   document.getElementById("restart").style.display = "block";
-  document.getElementById("game-over-overlay").innerText = "🎉 GAME WIN 🎉";
-  document.getElementById("game-over-overlay").style.display = "block";
+  showOverlayText("YOU WIN", score === (cols * rows - 1) ? `Perfect Run • Score ${score}` : `Final Score: ${score}`);
+  screenDim.classList.add("visible");
   updateStatus("Perfect run! Press Restart to play again.");
 
   playWinSound();
@@ -1354,8 +1588,8 @@ function winGame() {
 
 function launchCelebration() {
   stopCelebration();
-  spawnConfettiBurst(95);
-  celebrationSpawner = setInterval(() => spawnConfettiBurst(18), 280);
+  spawnConfettiBurst(100);
+  celebrationSpawner = setInterval(() => spawnConfettiBurst(18), 260);
 }
 
 function spawnConfettiBurst(pieceCount = 60) {
@@ -1414,7 +1648,13 @@ function queueDirectionByName(directionName) {
   if (directionName === "right" && dx !== -1) { newDx = 1; newDy = 0; }
 
   if (newDx !== dx || newDy !== dy) {
-    nextDirection = { dx: newDx, dy: newDy };
+    if (dx === 0 && dy === 0) {
+      dx = newDx;
+      dy = newDy;
+      nextDirection = null;
+    } else {
+      nextDirection = { dx: newDx, dy: newDy };
+    }
     directionLocked = true;
   }
 }
@@ -1489,7 +1729,7 @@ function redoFromGameOver() {
 
   restoreState(target);
   stagedRedoFromGameOver = true;
-  document.getElementById("game-over-overlay").style.display = "none";
+  hideOverlayText();
   document.getElementById("continueAfterRedoBtn").style.display = "inline-block";
 
   const remaining = maxContinues - continuesUsed;
@@ -1624,6 +1864,16 @@ document.getElementById("speed").addEventListener("change", () => {
 
 document.getElementById("board").addEventListener("change", () => {
   refreshDisplayedHighScoreForSelectedBoard();
+  if (!isGameRunning || isGameOver || isWin) {
+    // Board changes outside active play should clear finished-state overlays.
+    isGameOver = false;
+    isWin = false;
+    paused = false;
+    clearTransientVisualState();
+    continueModal.style.display = "none";
+    pauseModal.style.display = "none";
+    setPaused(false);
+  }
 });
 
 /* INITIAL */
@@ -1631,6 +1881,25 @@ updateSoundSettings();
 updateKeysDisplay();
 refreshCanvasColors();
 refreshDisplayedHighScoreForSelectedBoard();
+
+document.querySelectorAll("button").forEach((button) => {
+  button.addEventListener("pointerdown", () => button.classList.add("is-pressed"));
+  const release = () => button.classList.remove("is-pressed");
+  button.addEventListener("pointerup", release);
+  button.addEventListener("pointercancel", release);
+  button.addEventListener("blur", release);
+  button.addEventListener("mouseleave", release);
+  button.addEventListener("keydown", (e) => {
+    if (e.key === " " || e.key === "Enter") button.classList.add("is-pressed");
+  });
+  button.addEventListener("keyup", (e) => {
+    if (e.key === " " || e.key === "Enter") button.classList.remove("is-pressed");
+  });
+});
+
+window.addEventListener("pointerup", () => {
+  document.querySelectorAll("button.is-pressed").forEach((button) => button.classList.remove("is-pressed"));
+});
 </script>
 
 </body>
