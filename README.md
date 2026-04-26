@@ -1,71 +1,76 @@
 # Snake Game (Browser)
 
-A polished browser-based Snake game built with **HTML5 Canvas + vanilla JavaScript**, with retro sound effects, pause/resume, and extra recovery mechanics (Continue and Redo).
+A single-file, browser-based Snake game built with **HTML5 Canvas + vanilla JavaScript**.
 
-## Features
+It includes desktop + mobile controls, configurable board/speed options, sound controls, local high scores, and recovery mechanics (Continue/Redo) with optional key usage.
 
-- Adjustable game speed (`Slow`, `Regular`).
-- Adjustable board sizes (`16x16`, `14x14`, `10x10`, `8x8`, `4x4 Practice`).
-- Keyboard controls (Arrow keys) with **Space** to pause/resume.
-- In-game overlays for pause, game over, and resume countdown.
-- Sound system with toggles:
-  - Master Sound
-  - Sound Effects
-  - Background Music
-- Extra gameplay systems:
-  - **Continue**: return to state before the last food was eaten.
-  - **Redo**: repeatedly step back eat-by-eat.
-  - **Keys**: shared resource for Continue/Redo uses.
+## Current Features
+
+- **Game setup panel**
+  - Start game button
+  - Board sizes: `16×16`, `14×14`, `10×10`, `8×8`, `4×4 (Practice)`
+  - Speed modes: `Regular`, `Fast`
+  - How To Play modal
+  - Sound settings modal
+- **Gameplay + UI**
+  - Canvas-rendered snake + food
+  - Progress tube toward full-board win condition
+  - Score + best score display
+  - Dynamic speed scaling as score increases
+  - Pause/resume with countdown overlay
+  - Game-over and win overlays (with celebration effect on win)
+- **Controls**
+  - Desktop: Arrow keys + `Space` to pause/resume
+  - Mobile: on-screen directional touch controls + Pause button
+- **Recovery systems**
+  - **Continue** from latest checkpoint (state before last food)
+  - **Redo** one checkpoint at a time (from Pause or Game Over)
+  - **Keys** as a shared resource for Continue/Redo usage
+  - Placeholder “Watch Ad” and “Buy Keys” flows in UI
+- **Audio system**
+  - Master sound toggle
+  - Sound effects toggle
+  - Background music toggle
+  - Pre-generated WAV assets in `sounds/`
+- **Persistence**
+  - High score is stored in `localStorage` and tracked per board size
 
 ## Project Structure
 
-- `index.html` – main game UI, styles, and game logic.
-- `sounds/` – generated audio assets used by the game.
-- `generate_sounds.py` – generates key game sound files into `sounds/`.
-- `beep.py`, `bg_music.py`, `game_over.py` – helper scripts for custom sound generation.
+- `index.html` – app UI, styles, and all game logic
+- `sounds/` – audio assets used by the game
+- `generate_sounds.py` – regenerates core sound assets
+- `beep.py`, `bg_music.py`, `game_over.py` – helper scripts for sound generation
 
 ## Run Locally
 
-Because browsers restrict local file audio in some cases, run a tiny local web server instead of opening `index.html` directly.
-
-### Option 1: Python
+Run a local web server from the project root:
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Then open:
+Open:
 
 ```text
 http://localhost:8000
 ```
 
-### Option 2: VS Code Live Server
+> You can also use VS Code Live Server.
 
-Open the repo folder in VS Code and run **Live Server** on `index.html`.
-
-## Controls
-
-- **Arrow Keys**: move snake
-- **Space** or **Pause button**: pause/resume
-- **Start Game**: start a new game with selected settings
-- **Restart**: restart after game over
-
-## Sound Asset Generation (Optional)
-
-If you want to regenerate sounds:
+## Optional: Regenerate Sounds
 
 ```bash
 python3 generate_sounds.py
 ```
 
-This writes game sound files into the `sounds/` folder.
+This rewrites sound files inside `sounds/`.
 
 ## Notes
 
-- This game is fully client-side (no backend required).
-- Ad buttons in the UI are currently gameplay placeholders and can be wired to real ad flows later.
+- No backend required; everything runs client-side.
+- “Watch Ad” / “Buy Keys” actions are placeholder UX flows (not wired to ad/payment providers).
 
-## License
+## README Maintenance
 
-No license file is currently included. Add one (for example, MIT) if you plan to publish or share broadly.
+When future tasks change behavior, controls, setup, or project structure, update this README in the same change set.
