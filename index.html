@@ -1066,7 +1066,8 @@ let redoSincePauseOpened = false;
 let stagedRedoFromGameOver = false;
 
 const SPEED_STEP_MS = 10;
-const MIN_SPEED_MS = 85;
+const MIN_SPEED_MS = 180;
+const FAST_MODE_BASE_MS = 200;
 
 function updateKeysDisplay() {
   document.getElementById("keysDisplay").innerText = "Keys: " + playerKeys;
@@ -1107,12 +1108,19 @@ function getBaseSpeed() {
 
 function getSpeedForScore() {
   const baseSpeed = getBaseSpeed();
+  if (baseSpeed <= FAST_MODE_BASE_MS) {
+    return baseSpeed;
+  }
+
   const speedBonus = Math.floor(score / 4) * SPEED_STEP_MS;
   return Math.max(MIN_SPEED_MS, baseSpeed - speedBonus);
 }
 
 function refreshMoveInterval() {
-  moveIntervalMs = getSpeedForScore();
+  const nextMoveIntervalMs = getSpeedForScore();
+  const speedChanged = nextMoveIntervalMs !== moveIntervalMs;
+  moveIntervalMs = nextMoveIntervalMs;
+  return speedChanged;
 }
 
 function stopGameLoop() {
@@ -1430,10 +1438,14 @@ function update() {
     triggerScoreFeedback();
     triggerEatFeedback(head);
     saveHighScoreIfNeeded();
-    refreshMoveInterval();
-    syncGameLoopSpeed();
+    const speedChanged = refreshMoveInterval();
+    if (speedChanged) {
+      syncGameLoopSpeed();
+      updateStatus("Nice! Speed increased.");
+    } else {
+      updateStatus("Nice! Keep it going.");
+    }
     updateProgressDisplay();
-    updateStatus("Nice! Speed increased.");
 
     if (score % 10 === 0) playEat10Sound();
     else playEatSound();
