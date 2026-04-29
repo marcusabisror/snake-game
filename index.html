@@ -1,7 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#101820">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Snake">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="manifest.webmanifest">
   <title>Snake Game</title>
   <style>
     :root {
@@ -16,6 +24,14 @@
       --snake-body: #2ecc71;
     }
 
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      overscroll-behavior: contain;
+    }
+
     body {
       background: radial-gradient(circle at top, #163246 0%, var(--bg) 60%);
       margin: 0;
@@ -24,6 +40,7 @@
       padding: 12px;
       box-sizing: border-box;
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       justify-content: center;
       overflow-x: hidden;
@@ -148,6 +165,9 @@
       display: block;
       box-sizing: border-box;
       image-rendering: pixelated;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
     #progress-wrapper {
       display: flex;
@@ -525,23 +545,23 @@
     }
 
     .dpad {
-      width: 192px;
+      width: 216px;
       display: grid;
-      grid-template-columns: repeat(3, 56px);
-      grid-template-rows: repeat(3, 56px);
+      grid-template-columns: repeat(3, 64px);
+      grid-template-rows: repeat(3, 64px);
       gap: 8px;
       justify-content: center;
       align-items: center;
     }
 
     .touch-btn {
-      width: 56px;
-      height: 56px;
+      width: 64px;
+      height: 64px;
       border-radius: 14px;
       border: 1px solid #4f7085;
       background: #254557;
       color: white;
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 700;
       line-height: 1;
       cursor: pointer;
@@ -555,15 +575,35 @@
       background: #2f5f76;
     }
 
-    .dpad-center {
-      width: 56px;
-      height: 56px;
+    button.dpad-center {
+      width: 64px;
+      height: 64px;
       border-radius: 14px;
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(152, 199, 223, 0.35);
+      color: #b5d6e8;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+      padding: 0;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    button.dpad-center:active {
+      background: rgba(255, 255, 255, 0.16);
+      transform: scale(0.97);
+    }
+
+    body.in-run #pre-game-panel {
+      display: none;
     }
 
     @media (min-width: 701px) {
+      .mobile-only {
+        display: none !important;
+      }
+
       #controls {
         grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) minmax(180px, 1fr);
       }
@@ -630,7 +670,74 @@
       }
 
       #touch-controls {
-        display: block;
+        display: flex;
+        justify-content: center;
+      }
+
+      #game-wrapper {
+        width: max(260px, min(96vw, calc(100vh - 320px)));
+        width: max(260px, min(96vw, calc(100dvh - 320px)));
+        max-width: 96vw;
+      }
+
+      body.in-run #game-wrapper {
+        width: max(260px, min(96vw, calc(100vh - 240px)));
+        width: max(260px, min(96vw, calc(100dvh - 240px)));
+      }
+
+      /* Sideways mode: board on the left, D-pad on the right */
+      body.sideways #desktop-layout {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto auto auto;
+        column-gap: 16px;
+        row-gap: 6px;
+        align-items: center;
+        justify-items: center;
+      }
+
+      body.sideways #top-bar {
+        grid-column: 1 / 3;
+        grid-row: 1;
+        flex-direction: row;
+        align-items: center;
+        width: 100%;
+      }
+
+      body.sideways #top-bar-right {
+        flex-direction: row;
+        align-items: center;
+      }
+
+      body.sideways #game-status {
+        grid-column: 1 / 3;
+        grid-row: 2;
+        margin: 2px 0;
+      }
+
+      body.sideways #objective-hint {
+        grid-column: 1 / 3;
+        grid-row: 3;
+      }
+
+      body.sideways #game-wrapper {
+        grid-column: 1;
+        grid-row: 4;
+        justify-self: end;
+        width: min(calc(100vw - 240px), calc(100vh - 220px));
+        width: min(calc(100vw - 240px), calc(100dvh - 220px));
+        max-width: none;
+      }
+
+      body.sideways.in-run #game-wrapper {
+        width: min(calc(100vw - 240px), calc(100vh - 140px));
+        width: min(calc(100vw - 240px), calc(100dvh - 140px));
+      }
+
+      body.sideways #touch-controls {
+        grid-column: 2;
+        grid-row: 4;
+        justify-self: start;
       }
 
       .secondary-actions button {
@@ -681,6 +788,7 @@
     <div class="secondary-actions">
       <button id="howToPlayBtn">How To Play</button>
       <button id="soundSettingsBtn" class="settings-btn">Sound</button>
+      <button id="sidewaysBtn" class="settings-btn mobile-only">Sideways: Off</button>
       <button id="buyKeysHomeBtn" class="shop-btn">Buy Keys</button>
       <span class="assistive-note">Optional extra continues and redos.</span>
     </div>
@@ -726,7 +834,7 @@
       <div></div>
 
       <button class="touch-btn" data-dir="left" aria-label="Move left">←</button>
-      <div class="dpad-center" aria-hidden="true"></div>
+      <button class="dpad-center" id="dpadPauseBtn" aria-label="Pause or resume">II</button>
       <button class="touch-btn" data-dir="right" aria-label="Move right">→</button>
 
       <div></div>
@@ -796,6 +904,7 @@
       <div class="modal-actions">
       <button id="resumeFromModalBtn" class="modal-btn primary">Resume</button>
       <button id="pauseSoundBtn" class="modal-btn secondary">Sound Settings</button>
+      <button id="pauseSidewaysBtn" class="modal-btn secondary mobile-only">Sideways: Off</button>
       <button id="redoAdBtn" class="modal-btn secondary">↶ Redo (Watch Ad)</button>
       <button id="redoKeyBtn" class="modal-btn secondary">↶ Redo (Use Key)</button>
       <button id="buyRedoBtn" class="modal-btn warning">Buy Keys (Continue + Redo)</button>
@@ -808,11 +917,14 @@
       <h2>How To Play</h2>
       <div style="line-height:1.45; text-align:left;">
         <p><strong>Goal:</strong> Fill the entire board to win.</p>
-        <p><strong>Move:</strong> Use arrow keys on desktop or on-screen controls on mobile.</p>
-        <p><strong>Pause:</strong> Tap Pause on mobile or press Space on desktop.</p>
+        <p><strong>Move (desktop):</strong> Arrow keys.</p>
+        <p><strong>Move (mobile):</strong> Swipe on the board, or use the on-screen D-pad.</p>
+        <p><strong>Pause:</strong> Press Space on desktop. On mobile tap the Pause button or the center of the D-pad.</p>
+        <p><strong>Sideways mode (mobile):</strong> Tap "Sideways" to put the board on the left and the D-pad on the right — handy when holding the phone in landscape.</p>
         <p><strong>Rules:</strong> Avoid walls and your snake body. Each food gives 1 point.</p>
         <p><strong>Continue:</strong> Resume from your last food after a short countdown.</p>
         <p><strong>Redo:</strong> Step back one food from Pause or Game Over.</p>
+        <p class="modal-help">Tip: on iOS/Android you can install Snake to your home screen for a fullscreen experience.</p>
         <p class="modal-help">Watch Ad and Buy Keys are optional extras for continues and redos.</p>
       </div>
 
@@ -882,12 +994,25 @@ function playWinSound() {
   playWinFanfare();
 }
 
+let sharedAudioCtx = null;
+function ensureAudioContext() {
+  // iOS Safari leaves new AudioContexts suspended until explicitly resumed
+  // inside a user gesture, so we keep one shared context and resume on Start.
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!sharedAudioCtx) {
+    try { sharedAudioCtx = new AudioCtx(); } catch (_) { return null; }
+  }
+  if (sharedAudioCtx.state === "suspended") {
+    sharedAudioCtx.resume().catch(() => {});
+  }
+  return sharedAudioCtx;
+}
+
 function playWinFanfare() {
   if (!masterSound || !effectsEnabled) return;
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtx) return;
-
-  const audioCtx = new AudioCtx();
+  const audioCtx = ensureAudioContext();
+  if (!audioCtx) return;
   const now = audioCtx.currentTime + 0.03;
   const notes = [523.25, 659.25, 783.99, 1046.5, 1174.66, 1318.51];
 
@@ -1236,6 +1361,13 @@ function triggerEatFeedback(headCell) {
     gameWrapper.classList.remove("eat-flash");
     uiAnimTimeout = null;
   }, 120);
+  vibrate(10);
+}
+
+function vibrate(pattern) {
+  if (navigator.vibrate) {
+    try { navigator.vibrate(pattern); } catch (_) {}
+  }
 }
 
 function setupGame() {
@@ -1274,10 +1406,11 @@ function setupGame() {
 
   updateProgressDisplay();
   updateHighScoreDisplay();
+  document.body.classList.add("in-run");
   document.getElementById("restart").style.display = "none";
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
-  updateStatus("Use arrow keys or touch controls. Avoid walls and your tail.");
+  updateStatus("Use arrow keys, swipe, or touch controls. Avoid walls and your tail.");
 
   placeFood();
   eatHistory = [cloneState()];
@@ -1481,7 +1614,9 @@ function gameOver() {
   pauseModal.style.display = "none";
 
   document.getElementById("restart").style.display = "block";
+  document.body.classList.remove("in-run");
   playGameOverSound();
+  vibrate(80);
   const isNewBest = score > runStartedHighScore;
   showOverlayText("GAME OVER", isNewBest ? "New Best!" : "");
   screenDim.classList.add("visible");
@@ -1591,11 +1726,13 @@ function winGame() {
   pauseModal.style.display = "none";
 
   document.getElementById("restart").style.display = "block";
+  document.body.classList.remove("in-run");
   showOverlayText("YOU WIN", score === (cols * rows - 1) ? `Perfect Run • Score ${score}` : `Final Score: ${score}`);
   screenDim.classList.add("visible");
   updateStatus("Perfect run! Press Restart to play again.");
 
   playWinSound();
+  vibrate([30, 60, 30, 60, 120]);
   draw();
   launchCelebration();
 }
@@ -1609,12 +1746,15 @@ function launchCelebration() {
 function spawnConfettiBurst(pieceCount = 60) {
   const wrapper = document.getElementById("game-wrapper");
   const colors = ["#ff5252", "#ffd54f", "#66bb6a", "#42a5f5", "#ab47bc", "#ff8a65"];
+  const wrapperWidth = wrapper.offsetWidth || 400;
+  const wrapperHeight = wrapper.offsetHeight || 400;
+  const fallLimit = wrapperHeight + 30;
 
   for (let i = 0; i < pieceCount; i++) {
     const piece = document.createElement("div");
     piece.className = "confetti-piece";
     piece.style.background = colors[Math.floor(Math.random() * colors.length)];
-    piece.style.left = Math.random() * 392 + "px";
+    piece.style.left = Math.random() * Math.max(wrapperWidth - 8, 0) + "px";
     piece.style.top = "-20px";
     piece.style.transform = `rotate(${Math.random() * 360}deg)`;
     wrapper.appendChild(piece);
@@ -1630,7 +1770,7 @@ function spawnConfettiBurst(pieceCount = 60) {
       piece.style.top = y + "px";
       piece.style.left = x + "px";
 
-      if (y > 430) {
+      if (y > fallLimit) {
         clearInterval(timer);
         activeCelebrationTimers = activeCelebrationTimers.filter(t => t !== timer);
         piece.remove();
@@ -1695,6 +1835,7 @@ window.addEventListener("keydown", (e) => {
 
 /* BUTTONS */
 document.getElementById("start").onclick = () => {
+  ensureAudioContext();
   setupGame();
   startGameLoop();
   updateStatus("Game started. Good luck!");
@@ -1703,6 +1844,7 @@ document.getElementById("start").onclick = () => {
 };
 
 document.getElementById("restart").onclick = () => {
+  ensureAudioContext();
   setupGame();
   startGameLoop();
   updateStatus("Game restarted. Good luck!");
@@ -1869,6 +2011,85 @@ document.querySelectorAll(".touch-btn").forEach((button) => {
     button.addEventListener("click", handleTouchDirection);
   }
 });
+
+function togglePauseFromControl() {
+  if (!isGameRunning || isGameOver || isWin || inCountdown) return;
+  if (paused) {
+    resumeGameplayFromCurrentState();
+  } else {
+    setPaused(true);
+  }
+}
+
+document.getElementById("dpadPauseBtn").addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  togglePauseFromControl();
+});
+
+/* SIDEWAYS MODE */
+const SIDEWAYS_KEY = "snakeSidewaysMode";
+let sidewaysOn = localStorage.getItem(SIDEWAYS_KEY) === "1";
+
+function applySidewaysLabels() {
+  const label = `Sideways: ${sidewaysOn ? "On" : "Off"}`;
+  const homeBtn = document.getElementById("sidewaysBtn");
+  const pauseBtn = document.getElementById("pauseSidewaysBtn");
+  if (homeBtn) homeBtn.innerText = label;
+  if (pauseBtn) pauseBtn.innerText = label;
+}
+
+function applySidewaysClass() {
+  document.body.classList.toggle("sideways", sidewaysOn);
+}
+
+function toggleSideways() {
+  sidewaysOn = !sidewaysOn;
+  localStorage.setItem(SIDEWAYS_KEY, sidewaysOn ? "1" : "0");
+  applySidewaysClass();
+  applySidewaysLabels();
+}
+
+document.getElementById("sidewaysBtn").addEventListener("click", toggleSideways);
+document.getElementById("pauseSidewaysBtn").addEventListener("click", toggleSideways);
+
+applySidewaysClass();
+applySidewaysLabels();
+
+/* SWIPE-TO-TURN ON CANVAS */
+const SWIPE_MIN_PX = 18;
+let swipeStart = null;
+
+function handleSwipeStart(e) {
+  if (e.pointerType === "mouse") return;
+  swipeStart = { x: e.clientX, y: e.clientY };
+  // Capture so pointerup fires here even if the finger drifts off-canvas (Android/iOS).
+  if (canvasEl.setPointerCapture) {
+    try { canvasEl.setPointerCapture(e.pointerId); } catch (_) {}
+  }
+}
+
+function handleSwipeEnd(e) {
+  if (!swipeStart) return;
+  const dxPx = e.clientX - swipeStart.x;
+  const dyPx = e.clientY - swipeStart.y;
+  swipeStart = null;
+
+  const absX = Math.abs(dxPx);
+  const absY = Math.abs(dyPx);
+  if (Math.max(absX, absY) < SWIPE_MIN_PX) return;
+
+  if (absX > absY) {
+    queueDirectionByName(dxPx > 0 ? "right" : "left");
+  } else {
+    queueDirectionByName(dyPx > 0 ? "down" : "up");
+  }
+}
+
+const canvasEl = document.getElementById("game");
+canvasEl.addEventListener("pointerdown", handleSwipeStart);
+canvasEl.addEventListener("pointerup", handleSwipeEnd);
+canvasEl.addEventListener("pointercancel", () => { swipeStart = null; });
+canvasEl.addEventListener("contextmenu", (e) => e.preventDefault());
 
 document.getElementById("speed").addEventListener("change", () => {
   refreshMoveInterval();

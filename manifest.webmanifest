@@ -1,0 +1,10 @@
+{
+  "name": "Snake Game",
+  "short_name": "Snake",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#101820",
+  "theme_color": "#101820",
+  "description": "A classic snake game playable on desktop and mobile."
+}
