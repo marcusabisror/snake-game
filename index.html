@@ -1,7 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#101820">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Snake">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="manifest.webmanifest">
   <title>Snake Game</title>
   <style>
     :root {
@@ -16,6 +24,14 @@
       --snake-body: #2ecc71;
     }
 
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      overscroll-behavior: contain;
+    }
+
     body {
       background: radial-gradient(circle at top, #163246 0%, var(--bg) 60%);
       margin: 0;
@@ -24,6 +40,7 @@
       padding: 12px;
       box-sizing: border-box;
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       justify-content: center;
       overflow-x: hidden;
@@ -148,6 +165,9 @@
       display: block;
       box-sizing: border-box;
       image-rendering: pixelated;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
     #progress-wrapper {
       display: flex;
@@ -525,23 +545,23 @@
     }
 
     .dpad {
-      width: 192px;
+      width: 216px;
       display: grid;
-      grid-template-columns: repeat(3, 56px);
-      grid-template-rows: repeat(3, 56px);
+      grid-template-columns: repeat(3, 64px);
+      grid-template-rows: repeat(3, 64px);
       gap: 8px;
       justify-content: center;
       align-items: center;
     }
 
     .touch-btn {
-      width: 56px;
-      height: 56px;
+      width: 64px;
+      height: 64px;
       border-radius: 14px;
       border: 1px solid #4f7085;
       background: #254557;
       color: white;
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 700;
       line-height: 1;
       cursor: pointer;
@@ -555,15 +575,121 @@
       background: #2f5f76;
     }
 
-    .dpad-center {
-      width: 56px;
-      height: 56px;
+    button.dpad-center {
+      width: 64px;
+      height: 64px;
       border-radius: 14px;
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(152, 199, 223, 0.35);
+      color: #b5d6e8;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+      padding: 0;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    button.dpad-center:active {
+      background: rgba(255, 255, 255, 0.16);
+      transform: scale(0.97);
+    }
+
+    body.in-run #controls,
+    body.in-run .assistive-note {
+      display: none;
+    }
+
+    body.in-run #pre-game-panel {
+      padding: 6px 8px;
+      background: rgba(17, 30, 39, 0.45);
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      min-width: 44px;
+    }
+
+    .icon-btn svg {
+      display: block;
+    }
+
+    .icon-btn[aria-pressed="true"] {
+      background: linear-gradient(180deg, #2da7b7 0%, #1f8996 100%);
+      border-color: #57deed;
+      color: white;
+    }
+
+    .icon-text-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .icon-text-btn[aria-pressed="true"] {
+      background: #2da7b7;
+      box-shadow: 0 0 0 1px #57deed inset;
+    }
+
+    .rotate-prompt {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 1500;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+      text-align: center;
+      padding: 24px;
+      gap: 14px;
+    }
+
+    .rotate-prompt svg {
+      color: var(--accent);
+      animation: rotate-hint 2s ease-in-out infinite;
+    }
+
+    .rotate-prompt-message {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+      max-width: 280px;
+      line-height: 1.4;
+    }
+
+    .rotate-prompt-cancel {
+      margin-top: 8px;
+      padding: 10px 18px;
+      background: transparent;
+      border: 1px solid var(--panel-border);
+      color: var(--text);
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    @keyframes rotate-hint {
+      0%, 100% { transform: rotate(-15deg); }
+      50% { transform: rotate(75deg); }
+    }
+
+    @media (max-width: 900px) and (orientation: portrait) {
+      body.sideways .rotate-prompt {
+        display: flex;
+      }
     }
 
     @media (min-width: 701px) {
+      .mobile-only {
+        display: none !important;
+      }
+
       #controls {
         grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) minmax(180px, 1fr);
       }
@@ -593,35 +719,76 @@
 
     @media (max-width: 700px) {
       body {
-        padding: 10px 10px calc(14px + env(safe-area-inset-bottom));
+        padding: 8px 8px calc(10px + env(safe-area-inset-bottom));
+      }
+
+      #app {
+        gap: 6px;
+      }
+
+      #pre-game-panel {
+        padding: 8px;
+        gap: 8px;
       }
 
       #controls {
         grid-template-columns: 1fr;
+        gap: 6px;
       }
 
       #controls label {
         align-self: center;
       }
 
+      .secondary-actions {
+        gap: 6px;
+      }
+
+      .secondary-actions .icon-btn {
+        flex: 0 0 auto;
+        padding: 6px 10px;
+      }
+
+      .assistive-note,
+      #keysHelp,
+      #objective-hint {
+        display: none;
+      }
+
       #top-bar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 10px;
+        gap: 8px;
+        margin-bottom: 0;
       }
 
       #top-bar-right {
         flex-wrap: nowrap;
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
       }
 
       #top-bar-right > div {
-        margin-bottom: 4px;
+        margin-bottom: 0;
+      }
+
+      #score-display {
+        font-size: 15px;
+        min-width: 0;
+      }
+
+      #high-score-display,
+      #keysDisplay {
+        font-size: 12px;
       }
 
       #progress-wrapper {
         min-width: 0;
+        flex: 1 1 100%;
       }
 
       #progress-tube {
@@ -629,8 +796,87 @@
         min-width: 110px;
       }
 
+      #game-status {
+        font-size: 12px;
+        margin: 4px 0;
+      }
+
+      #pauseBtn,
+      #restart {
+        min-height: 36px;
+        padding: 6px 10px;
+        font-size: 13px;
+      }
+
       #touch-controls {
-        display: block;
+        display: flex;
+        justify-content: center;
+      }
+
+      #game-wrapper {
+        width: max(260px, min(96vw, calc(100vh - 320px)));
+        width: max(260px, min(96vw, calc(100dvh - 320px)));
+        max-width: 96vw;
+      }
+
+      body.in-run #game-wrapper {
+        width: max(260px, min(96vw, calc(100vh - 280px)));
+        width: max(260px, min(96vw, calc(100dvh - 280px)));
+      }
+
+      /* Sideways mode: board on the left, D-pad on the right */
+      body.sideways #desktop-layout {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto auto auto;
+        column-gap: 16px;
+        row-gap: 6px;
+        align-items: center;
+        justify-items: center;
+      }
+
+      body.sideways #top-bar {
+        grid-column: 1 / 3;
+        grid-row: 1;
+        flex-direction: row;
+        align-items: center;
+        width: 100%;
+      }
+
+      body.sideways #top-bar-right {
+        flex-direction: row;
+        align-items: center;
+      }
+
+      body.sideways #game-status {
+        grid-column: 1 / 3;
+        grid-row: 2;
+        margin: 2px 0;
+      }
+
+      body.sideways #objective-hint {
+        grid-column: 1 / 3;
+        grid-row: 3;
+      }
+
+      body.sideways #game-wrapper {
+        grid-column: 1;
+        grid-row: 4;
+        justify-self: end;
+        width: min(calc(100vw - 240px), calc(100vh - 220px));
+        width: min(calc(100vw - 240px), calc(100dvh - 220px));
+        max-width: none;
+      }
+
+      body.sideways.in-run #game-wrapper {
+        width: min(calc(100vw - 240px), calc(100vh - 180px));
+        width: min(calc(100vw - 240px), calc(100dvh - 180px));
+      }
+
+      body.sideways #touch-controls {
+        grid-column: 2;
+        grid-row: 4;
+        justify-self: start;
       }
 
       .secondary-actions button {
@@ -645,6 +891,53 @@
         width: min(92vw, 340px);
         margin: 5% auto;
         padding: 16px;
+      }
+    }
+
+    /* Sideways + landscape: compact chrome and grow the board */
+    @media (max-width: 900px) and (orientation: landscape) {
+      body.sideways {
+        padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+      }
+
+      body.sideways #app {
+        gap: 4px;
+      }
+
+      body.sideways #pre-game-panel {
+        padding: 4px 6px;
+      }
+
+      body.sideways #top-bar {
+        padding: 4px 8px;
+        margin-bottom: 0;
+        gap: 6px;
+      }
+
+      body.sideways #high-score-display,
+      body.sideways #keysHelp,
+      body.sideways #game-status,
+      body.sideways #objective-hint {
+        display: none;
+      }
+
+      body.sideways #score-display {
+        font-size: 13px;
+      }
+
+      body.sideways.in-run #pre-game-panel {
+        display: none;
+      }
+
+      body.sideways #game-wrapper {
+        width: min(calc(100vw - 240px), calc(100vh - 90px));
+        width: min(calc(100vw - 240px), calc(100dvh - 90px));
+        max-width: none;
+      }
+
+      body.sideways.in-run #game-wrapper {
+        width: min(calc(100vw - 240px), calc(100vh - 60px));
+        width: min(calc(100vw - 240px), calc(100dvh - 60px));
       }
     }
 
@@ -681,6 +974,11 @@
     <div class="secondary-actions">
       <button id="howToPlayBtn">How To Play</button>
       <button id="soundSettingsBtn" class="settings-btn">Sound</button>
+      <button id="sidewaysBtn" class="settings-btn icon-btn mobile-only" aria-label="Toggle sideways layout" aria-pressed="false" title="Sideways layout">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true" focusable="false">
+          <path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-6.25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c.59.59 1.54.59 2.12 0l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.36-6.36 12.02 12.02-6.36 6.36zm-7.31-1.7c-3.28-1.55-5.61-4.72-5.98-8.48h-1.5C.56 19.16 5.71 24 12 24l.66-.03-3.81-3.81-1.33 1.32z"/>
+        </svg>
+      </button>
       <button id="buyKeysHomeBtn" class="shop-btn">Buy Keys</button>
       <span class="assistive-note">Optional extra continues and redos.</span>
     </div>
@@ -726,7 +1024,7 @@
       <div></div>
 
       <button class="touch-btn" data-dir="left" aria-label="Move left">←</button>
-      <div class="dpad-center" aria-hidden="true"></div>
+      <button class="dpad-center" id="dpadPauseBtn" aria-label="Pause or resume">II</button>
       <button class="touch-btn" data-dir="right" aria-label="Move right">→</button>
 
       <div></div>
@@ -796,6 +1094,12 @@
       <div class="modal-actions">
       <button id="resumeFromModalBtn" class="modal-btn primary">Resume</button>
       <button id="pauseSoundBtn" class="modal-btn secondary">Sound Settings</button>
+      <button id="pauseSidewaysBtn" class="modal-btn secondary mobile-only icon-text-btn" aria-label="Toggle sideways layout" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false">
+          <path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-6.25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c.59.59 1.54.59 2.12 0l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.36-6.36 12.02 12.02-6.36 6.36zm-7.31-1.7c-3.28-1.55-5.61-4.72-5.98-8.48h-1.5C.56 19.16 5.71 24 12 24l.66-.03-3.81-3.81-1.33 1.32z"/>
+        </svg>
+        <span>Sideways Layout</span>
+      </button>
       <button id="redoAdBtn" class="modal-btn secondary">↶ Redo (Watch Ad)</button>
       <button id="redoKeyBtn" class="modal-btn secondary">↶ Redo (Use Key)</button>
       <button id="buyRedoBtn" class="modal-btn warning">Buy Keys (Continue + Redo)</button>
@@ -808,11 +1112,14 @@
       <h2>How To Play</h2>
       <div style="line-height:1.45; text-align:left;">
         <p><strong>Goal:</strong> Fill the entire board to win.</p>
-        <p><strong>Move:</strong> Use arrow keys on desktop or on-screen controls on mobile.</p>
-        <p><strong>Pause:</strong> Tap Pause on mobile or press Space on desktop.</p>
+        <p><strong>Move (desktop):</strong> Arrow keys.</p>
+        <p><strong>Move (mobile):</strong> Swipe on the board, or use the on-screen D-pad.</p>
+        <p><strong>Pause:</strong> Press Space on desktop. On mobile tap the Pause button or the center of the D-pad.</p>
+        <p><strong>Sideways mode (mobile):</strong> Tap "Sideways" to put the board on the left and the D-pad on the right — handy when holding the phone in landscape.</p>
         <p><strong>Rules:</strong> Avoid walls and your snake body. Each food gives 1 point.</p>
         <p><strong>Continue:</strong> Resume from your last food after a short countdown.</p>
         <p><strong>Redo:</strong> Step back one food from Pause or Game Over.</p>
+        <p class="modal-help">Tip: on iOS/Android you can install Snake to your home screen for a fullscreen experience.</p>
         <p class="modal-help">Watch Ad and Buy Keys are optional extras for continues and redos.</p>
       </div>
 
@@ -820,6 +1127,14 @@
     </div>
   </div>
 
+  </div>
+
+  <div class="rotate-prompt" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="84" height="84" fill="currentColor" aria-hidden="true">
+      <path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-6.25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c.59.59 1.54.59 2.12 0l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.36-6.36 12.02 12.02-6.36 6.36zm-7.31-1.7c-3.28-1.55-5.61-4.72-5.98-8.48h-1.5C.56 19.16 5.71 24 12 24l.66-.03-3.81-3.81-1.33 1.32z"/>
+    </svg>
+    <p class="rotate-prompt-message">Turn your phone sideways to play.</p>
+    <button class="rotate-prompt-cancel" id="cancelSidewaysBtn">Cancel sideways mode</button>
   </div>
 <script>
 /* LOAD SOUNDS */
@@ -882,12 +1197,25 @@ function playWinSound() {
   playWinFanfare();
 }
 
+let sharedAudioCtx = null;
+function ensureAudioContext() {
+  // iOS Safari leaves new AudioContexts suspended until explicitly resumed
+  // inside a user gesture, so we keep one shared context and resume on Start.
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!sharedAudioCtx) {
+    try { sharedAudioCtx = new AudioCtx(); } catch (_) { return null; }
+  }
+  if (sharedAudioCtx.state === "suspended") {
+    sharedAudioCtx.resume().catch(() => {});
+  }
+  return sharedAudioCtx;
+}
+
 function playWinFanfare() {
   if (!masterSound || !effectsEnabled) return;
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtx) return;
-
-  const audioCtx = new AudioCtx();
+  const audioCtx = ensureAudioContext();
+  if (!audioCtx) return;
   const now = audioCtx.currentTime + 0.03;
   const notes = [523.25, 659.25, 783.99, 1046.5, 1174.66, 1318.51];
 
@@ -1236,6 +1564,13 @@ function triggerEatFeedback(headCell) {
     gameWrapper.classList.remove("eat-flash");
     uiAnimTimeout = null;
   }, 120);
+  vibrate(10);
+}
+
+function vibrate(pattern) {
+  if (navigator.vibrate) {
+    try { navigator.vibrate(pattern); } catch (_) {}
+  }
 }
 
 function setupGame() {
@@ -1274,10 +1609,11 @@ function setupGame() {
 
   updateProgressDisplay();
   updateHighScoreDisplay();
+  document.body.classList.add("in-run");
   document.getElementById("restart").style.display = "none";
   continueModal.style.display = "none";
   pauseModal.style.display = "none";
-  updateStatus("Use arrow keys or touch controls. Avoid walls and your tail.");
+  updateStatus("Use arrow keys, swipe, or touch controls. Avoid walls and your tail.");
 
   placeFood();
   eatHistory = [cloneState()];
@@ -1481,7 +1817,9 @@ function gameOver() {
   pauseModal.style.display = "none";
 
   document.getElementById("restart").style.display = "block";
+  document.body.classList.remove("in-run");
   playGameOverSound();
+  vibrate(80);
   const isNewBest = score > runStartedHighScore;
   showOverlayText("GAME OVER", isNewBest ? "New Best!" : "");
   screenDim.classList.add("visible");
@@ -1591,11 +1929,13 @@ function winGame() {
   pauseModal.style.display = "none";
 
   document.getElementById("restart").style.display = "block";
+  document.body.classList.remove("in-run");
   showOverlayText("YOU WIN", score === (cols * rows - 1) ? `Perfect Run • Score ${score}` : `Final Score: ${score}`);
   screenDim.classList.add("visible");
   updateStatus("Perfect run! Press Restart to play again.");
 
   playWinSound();
+  vibrate([30, 60, 30, 60, 120]);
   draw();
   launchCelebration();
 }
@@ -1609,12 +1949,15 @@ function launchCelebration() {
 function spawnConfettiBurst(pieceCount = 60) {
   const wrapper = document.getElementById("game-wrapper");
   const colors = ["#ff5252", "#ffd54f", "#66bb6a", "#42a5f5", "#ab47bc", "#ff8a65"];
+  const wrapperWidth = wrapper.offsetWidth || 400;
+  const wrapperHeight = wrapper.offsetHeight || 400;
+  const fallLimit = wrapperHeight + 30;
 
   for (let i = 0; i < pieceCount; i++) {
     const piece = document.createElement("div");
     piece.className = "confetti-piece";
     piece.style.background = colors[Math.floor(Math.random() * colors.length)];
-    piece.style.left = Math.random() * 392 + "px";
+    piece.style.left = Math.random() * Math.max(wrapperWidth - 8, 0) + "px";
     piece.style.top = "-20px";
     piece.style.transform = `rotate(${Math.random() * 360}deg)`;
     wrapper.appendChild(piece);
@@ -1630,7 +1973,7 @@ function spawnConfettiBurst(pieceCount = 60) {
       piece.style.top = y + "px";
       piece.style.left = x + "px";
 
-      if (y > 430) {
+      if (y > fallLimit) {
         clearInterval(timer);
         activeCelebrationTimers = activeCelebrationTimers.filter(t => t !== timer);
         piece.remove();
@@ -1695,6 +2038,7 @@ window.addEventListener("keydown", (e) => {
 
 /* BUTTONS */
 document.getElementById("start").onclick = () => {
+  ensureAudioContext();
   setupGame();
   startGameLoop();
   updateStatus("Game started. Good luck!");
@@ -1703,6 +2047,7 @@ document.getElementById("start").onclick = () => {
 };
 
 document.getElementById("restart").onclick = () => {
+  ensureAudioContext();
   setupGame();
   startGameLoop();
   updateStatus("Game restarted. Good luck!");
@@ -1869,6 +2214,96 @@ document.querySelectorAll(".touch-btn").forEach((button) => {
     button.addEventListener("click", handleTouchDirection);
   }
 });
+
+function togglePauseFromControl() {
+  if (!isGameRunning || isGameOver || isWin || inCountdown) return;
+  if (paused) {
+    resumeGameplayFromCurrentState();
+  } else {
+    setPaused(true);
+  }
+}
+
+document.getElementById("dpadPauseBtn").addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  togglePauseFromControl();
+});
+
+/* SIDEWAYS MODE */
+const SIDEWAYS_KEY = "snakeSidewaysMode";
+let sidewaysOn = localStorage.getItem(SIDEWAYS_KEY) === "1";
+
+function applySidewaysState() {
+  document.body.classList.toggle("sideways", sidewaysOn);
+  const homeBtn = document.getElementById("sidewaysBtn");
+  const pauseBtn = document.getElementById("pauseSidewaysBtn");
+  if (homeBtn) homeBtn.setAttribute("aria-pressed", sidewaysOn ? "true" : "false");
+  if (pauseBtn) pauseBtn.setAttribute("aria-pressed", sidewaysOn ? "true" : "false");
+}
+
+function toggleSideways() {
+  sidewaysOn = !sidewaysOn;
+  localStorage.setItem(SIDEWAYS_KEY, sidewaysOn ? "1" : "0");
+  applySidewaysState();
+}
+
+document.getElementById("sidewaysBtn").addEventListener("click", toggleSideways);
+document.getElementById("pauseSidewaysBtn").addEventListener("click", toggleSideways);
+document.getElementById("cancelSidewaysBtn").addEventListener("click", () => {
+  if (sidewaysOn) toggleSideways();
+});
+
+const portraitMq = window.matchMedia("(orientation: portrait)");
+function autoPauseIfPortraitSideways() {
+  if (!sidewaysOn) return;
+  if (!portraitMq.matches) return;
+  if (isGameRunning && !paused && !isGameOver && !isWin && !inCountdown) {
+    setPaused(true);
+  }
+}
+if (portraitMq.addEventListener) {
+  portraitMq.addEventListener("change", autoPauseIfPortraitSideways);
+} else if (portraitMq.addListener) {
+  portraitMq.addListener(autoPauseIfPortraitSideways);
+}
+
+applySidewaysState();
+
+/* SWIPE-TO-TURN ON CANVAS */
+const SWIPE_MIN_PX = 18;
+let swipeStart = null;
+
+function handleSwipeStart(e) {
+  if (e.pointerType === "mouse") return;
+  swipeStart = { x: e.clientX, y: e.clientY };
+  // Capture so pointerup fires here even if the finger drifts off-canvas (Android/iOS).
+  if (canvasEl.setPointerCapture) {
+    try { canvasEl.setPointerCapture(e.pointerId); } catch (_) {}
+  }
+}
+
+function handleSwipeEnd(e) {
+  if (!swipeStart) return;
+  const dxPx = e.clientX - swipeStart.x;
+  const dyPx = e.clientY - swipeStart.y;
+  swipeStart = null;
+
+  const absX = Math.abs(dxPx);
+  const absY = Math.abs(dyPx);
+  if (Math.max(absX, absY) < SWIPE_MIN_PX) return;
+
+  if (absX > absY) {
+    queueDirectionByName(dxPx > 0 ? "right" : "left");
+  } else {
+    queueDirectionByName(dyPx > 0 ? "down" : "up");
+  }
+}
+
+const canvasEl = document.getElementById("game");
+canvasEl.addEventListener("pointerdown", handleSwipeStart);
+canvasEl.addEventListener("pointerup", handleSwipeEnd);
+canvasEl.addEventListener("pointercancel", () => { swipeStart = null; });
+canvasEl.addEventListener("contextmenu", (e) => e.preventDefault());
 
 document.getElementById("speed").addEventListener("change", () => {
   refreshMoveInterval();

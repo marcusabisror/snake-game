@@ -21,7 +21,9 @@ It includes desktop + mobile controls, configurable board/speed options, sound c
   - Game-over and win overlays (with celebration effect on win)
 - **Controls**
   - Desktop: Arrow keys + `Space` to pause/resume
-  - Mobile: on-screen directional touch controls + Pause button
+  - Mobile: swipe on the board to turn, on-screen D-pad as fallback, Pause button
+  - Center of the D-pad doubles as a pause/resume button on mobile
+  - Haptic feedback on eat / game over / win (where supported)
 - **Recovery systems**
   - **Continue** from latest checkpoint (state before last food)
   - **Redo** one checkpoint at a time (from Pause or Game Over)
@@ -34,10 +36,17 @@ It includes desktop + mobile controls, configurable board/speed options, sound c
   - Pre-generated WAV assets in `sounds/`
 - **Persistence**
   - High score is stored in `localStorage` and tracked per board size
+- **Mobile / PWA**
+  - Web manifest + iOS web-app meta tags so the game can be installed to the home screen and run fullscreen
+  - Pre-game options panel hides during active runs to give the board more vertical space
+  - Board scales to viewport height using `dvh`-based sizing
+  - **Sideways mode** toggle: places the board on the left and the D-pad on the right (best when the phone is held in landscape); the choice is persisted in `localStorage`
+  - D-pad is centered horizontally in portrait
 
 ## Project Structure
 
 - `index.html` – app UI, styles, and all game logic
+- `manifest.webmanifest` – PWA manifest enabling home-screen install
 - `sounds/` – audio assets used by the game
 - `generate_sounds.py` – regenerates core sound assets
 - `beep.py`, `bg_music.py`, `game_over.py` – helper scripts for sound generation
