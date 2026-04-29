@@ -599,6 +599,36 @@
       display: none;
     }
 
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      min-width: 44px;
+    }
+
+    .icon-btn svg {
+      display: block;
+    }
+
+    .icon-btn[aria-pressed="true"] {
+      background: linear-gradient(180deg, #2da7b7 0%, #1f8996 100%);
+      border-color: #57deed;
+      color: white;
+    }
+
+    .icon-text-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .icon-text-btn[aria-pressed="true"] {
+      background: #2da7b7;
+      box-shadow: 0 0 0 1px #57deed inset;
+    }
+
     @media (min-width: 701px) {
       .mobile-only {
         display: none !important;
@@ -633,40 +663,93 @@
 
     @media (max-width: 700px) {
       body {
-        padding: 10px 10px calc(14px + env(safe-area-inset-bottom));
+        padding: 8px 8px calc(10px + env(safe-area-inset-bottom));
+      }
+
+      #app {
+        gap: 6px;
+      }
+
+      #pre-game-panel {
+        padding: 8px;
+        gap: 8px;
       }
 
       #controls {
         grid-template-columns: 1fr;
+        gap: 6px;
       }
 
       #controls label {
         align-self: center;
       }
 
+      .secondary-actions {
+        gap: 6px;
+      }
+
+      .secondary-actions .icon-btn {
+        flex: 0 0 auto;
+        padding: 6px 10px;
+      }
+
+      .assistive-note,
+      #keysHelp,
+      #objective-hint {
+        display: none;
+      }
+
       #top-bar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 10px;
+        gap: 8px;
+        margin-bottom: 0;
       }
 
       #top-bar-right {
         flex-wrap: nowrap;
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
       }
 
       #top-bar-right > div {
-        margin-bottom: 4px;
+        margin-bottom: 0;
+      }
+
+      #score-display {
+        font-size: 15px;
+        min-width: 0;
+      }
+
+      #high-score-display,
+      #keysDisplay {
+        font-size: 12px;
       }
 
       #progress-wrapper {
         min-width: 0;
+        flex: 1 1 100%;
       }
 
       #progress-tube {
         flex: 1;
         min-width: 110px;
+      }
+
+      #game-status {
+        font-size: 12px;
+        margin: 4px 0;
+      }
+
+      #pauseBtn,
+      #restart {
+        min-height: 36px;
+        padding: 6px 10px;
+        font-size: 13px;
       }
 
       #touch-controls {
@@ -788,7 +871,11 @@
     <div class="secondary-actions">
       <button id="howToPlayBtn">How To Play</button>
       <button id="soundSettingsBtn" class="settings-btn">Sound</button>
-      <button id="sidewaysBtn" class="settings-btn mobile-only">Sideways: Off</button>
+      <button id="sidewaysBtn" class="settings-btn icon-btn mobile-only" aria-label="Toggle sideways layout" aria-pressed="false" title="Sideways layout">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true" focusable="false">
+          <path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-6.25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c.59.59 1.54.59 2.12 0l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.36-6.36 12.02 12.02-6.36 6.36zm-7.31-1.7c-3.28-1.55-5.61-4.72-5.98-8.48h-1.5C.56 19.16 5.71 24 12 24l.66-.03-3.81-3.81-1.33 1.32z"/>
+        </svg>
+      </button>
       <button id="buyKeysHomeBtn" class="shop-btn">Buy Keys</button>
       <span class="assistive-note">Optional extra continues and redos.</span>
     </div>
@@ -904,7 +991,12 @@
       <div class="modal-actions">
       <button id="resumeFromModalBtn" class="modal-btn primary">Resume</button>
       <button id="pauseSoundBtn" class="modal-btn secondary">Sound Settings</button>
-      <button id="pauseSidewaysBtn" class="modal-btn secondary mobile-only">Sideways: Off</button>
+      <button id="pauseSidewaysBtn" class="modal-btn secondary mobile-only icon-text-btn" aria-label="Toggle sideways layout" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false">
+          <path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-6.25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c.59.59 1.54.59 2.12 0l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.36-6.36 12.02 12.02-6.36 6.36zm-7.31-1.7c-3.28-1.55-5.61-4.72-5.98-8.48h-1.5C.56 19.16 5.71 24 12 24l.66-.03-3.81-3.81-1.33 1.32z"/>
+        </svg>
+        <span>Sideways Layout</span>
+      </button>
       <button id="redoAdBtn" class="modal-btn secondary">↶ Redo (Watch Ad)</button>
       <button id="redoKeyBtn" class="modal-btn secondary">↶ Redo (Use Key)</button>
       <button id="buyRedoBtn" class="modal-btn warning">Buy Keys (Continue + Redo)</button>
@@ -2030,30 +2122,24 @@ document.getElementById("dpadPauseBtn").addEventListener("pointerdown", (e) => {
 const SIDEWAYS_KEY = "snakeSidewaysMode";
 let sidewaysOn = localStorage.getItem(SIDEWAYS_KEY) === "1";
 
-function applySidewaysLabels() {
-  const label = `Sideways: ${sidewaysOn ? "On" : "Off"}`;
+function applySidewaysState() {
+  document.body.classList.toggle("sideways", sidewaysOn);
   const homeBtn = document.getElementById("sidewaysBtn");
   const pauseBtn = document.getElementById("pauseSidewaysBtn");
-  if (homeBtn) homeBtn.innerText = label;
-  if (pauseBtn) pauseBtn.innerText = label;
-}
-
-function applySidewaysClass() {
-  document.body.classList.toggle("sideways", sidewaysOn);
+  if (homeBtn) homeBtn.setAttribute("aria-pressed", sidewaysOn ? "true" : "false");
+  if (pauseBtn) pauseBtn.setAttribute("aria-pressed", sidewaysOn ? "true" : "false");
 }
 
 function toggleSideways() {
   sidewaysOn = !sidewaysOn;
   localStorage.setItem(SIDEWAYS_KEY, sidewaysOn ? "1" : "0");
-  applySidewaysClass();
-  applySidewaysLabels();
+  applySidewaysState();
 }
 
 document.getElementById("sidewaysBtn").addEventListener("click", toggleSideways);
 document.getElementById("pauseSidewaysBtn").addEventListener("click", toggleSideways);
 
-applySidewaysClass();
-applySidewaysLabels();
+applySidewaysState();
 
 /* SWIPE-TO-TURN ON CANVAS */
 const SWIPE_MIN_PX = 18;
