@@ -32,6 +32,11 @@
       overscroll-behavior: contain;
     }
 
+    body.in-run {
+      overflow: hidden;
+      touch-action: none;
+    }
+
     body {
       background: radial-gradient(circle at top, #163246 0%, var(--bg) 60%);
       margin: 0;
@@ -274,6 +279,12 @@
       text-align: center;
       border: 1px solid var(--panel-border);
       box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      max-height: 85vh;
+      max-height: 85dvh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
     }
 
     .modal-content h2 { margin: 0 0 8px; }
@@ -894,7 +905,12 @@
       }
     }
 
-    /* Sideways + landscape: compact chrome and grow the board */
+    .sideways-controls-toggle,
+    .sideways-toggle-row {
+      display: none;
+    }
+
+    /* Sideways + landscape: top-bar / toggle row / board-left + dpad-right */
     @media (max-width: 900px) and (orientation: landscape) {
       body.sideways {
         padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
@@ -908,10 +924,48 @@
         padding: 4px 6px;
       }
 
+      body.sideways #desktop-layout {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto auto;
+        column-gap: 12px;
+        row-gap: 4px;
+        align-items: center;
+      }
+
       body.sideways #top-bar {
+        grid-column: 1 / 3;
+        grid-row: 1;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
         padding: 4px 8px;
         margin-bottom: 0;
         gap: 6px;
+        width: 100%;
+      }
+
+      body.sideways #top-bar-right {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+      }
+
+      body.sideways .sideways-toggle-row {
+        display: flex;
+        grid-column: 1 / 3;
+        grid-row: 2;
+        justify-content: flex-end;
+        width: 100%;
+      }
+
+      body.sideways .sideways-controls-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        min-height: 30px;
+        padding: 4px 12px;
       }
 
       body.sideways #high-score-display,
@@ -930,14 +984,29 @@
       }
 
       body.sideways #game-wrapper {
-        width: min(calc(100vw - 240px), calc(100vh - 90px));
-        width: min(calc(100vw - 240px), calc(100dvh - 90px));
+        grid-column: 1;
+        grid-row: 3;
+        justify-self: start;
+        width: min(calc(100vw - 24px), calc(100vh - 110px));
+        width: min(calc(100vw - 24px), calc(100dvh - 110px));
         max-width: none;
       }
 
-      body.sideways.in-run #game-wrapper {
-        width: min(calc(100vw - 240px), calc(100vh - 60px));
-        width: min(calc(100vw - 240px), calc(100dvh - 60px));
+      /* D-pad hidden by default in sideways landscape */
+      body.sideways #touch-controls {
+        display: none;
+        grid-column: 2;
+        grid-row: 3;
+        justify-self: end;
+      }
+
+      body.sideways.show-controls #touch-controls {
+        display: flex;
+      }
+
+      body.sideways.show-controls #game-wrapper {
+        width: min(calc(100vw - 240px), calc(100vh - 110px));
+        width: min(calc(100vw - 240px), calc(100dvh - 110px));
       }
     }
 
@@ -1003,6 +1072,10 @@
         <button id="pauseBtn">Pause</button>
         <button id="restart" style="display:none;">Restart</button>
       </div>
+    </div>
+
+    <div class="sideways-toggle-row">
+      <button id="toggleControlsBtn" class="settings-btn sideways-controls-toggle">Show Controls</button>
     </div>
 
     <div id="game-status">Press Start to begin.</div>
@@ -1113,9 +1186,10 @@
       <div style="line-height:1.45; text-align:left;">
         <p><strong>Goal:</strong> Fill the entire board to win.</p>
         <p><strong>Move (desktop):</strong> Arrow keys.</p>
-        <p><strong>Move (mobile):</strong> Swipe on the board, or use the on-screen D-pad.</p>
-        <p><strong>Pause:</strong> Press Space on desktop. On mobile tap the Pause button or the center of the D-pad.</p>
-        <p><strong>Sideways mode (mobile):</strong> Tap "Sideways" to put the board on the left and the D-pad on the right — handy when holding the phone in landscape.</p>
+        <p><strong>Move (mobile):</strong> Swipe anywhere on the screen, or use the on-screen D-pad.</p>
+        <p><strong>Pause (mobile):</strong> Tap anywhere on the screen, or use the Pause button / D-pad center.</p>
+        <p><strong>Pause (desktop):</strong> Press Space.</p>
+        <p><strong>Sideways mode (mobile):</strong> Turn your phone sideways. The board fills the screen; tap "Show Controls" in the top-right to bring up the D-pad when you need it, "Hide Controls" to give the board the space back.</p>
         <p><strong>Rules:</strong> Avoid walls and your snake body. Each food gives 1 point.</p>
         <p><strong>Continue:</strong> Resume from your last food after a short countdown.</p>
         <p><strong>Redo:</strong> Step back one food from Pause or Game Over.</p>
@@ -1291,7 +1365,10 @@ document.getElementById("closeHowToPlayBtn").onclick = () => {
 window.onclick = (e) => {
   if (e.target === soundModal) soundModal.style.display = "none";
   if (e.target === howToPlayModal) howToPlayModal.style.display = "none";
-  if (e.target === pauseModal) pauseModal.style.display = "none";
+  if (e.target === pauseModal) {
+    pauseModal.style.display = "none";
+    if (paused) resumeGameplayFromCurrentState();
+  }
 };
 
 masterToggle.onchange = () => {
@@ -2224,10 +2301,7 @@ function togglePauseFromControl() {
   }
 }
 
-document.getElementById("dpadPauseBtn").addEventListener("pointerdown", (e) => {
-  e.preventDefault();
-  togglePauseFromControl();
-});
+document.getElementById("dpadPauseBtn").addEventListener("click", togglePauseFromControl);
 
 /* SIDEWAYS MODE */
 const SIDEWAYS_KEY = "snakeSidewaysMode";
@@ -2253,6 +2327,12 @@ document.getElementById("cancelSidewaysBtn").addEventListener("click", () => {
   if (sidewaysOn) toggleSideways();
 });
 
+const toggleControlsBtn = document.getElementById("toggleControlsBtn");
+toggleControlsBtn.addEventListener("click", () => {
+  const showing = document.body.classList.toggle("show-controls");
+  toggleControlsBtn.innerText = showing ? "Hide Controls" : "Show Controls";
+});
+
 const portraitMq = window.matchMedia("(orientation: portrait)");
 function autoPauseIfPortraitSideways() {
   if (!sidewaysOn) return;
@@ -2269,28 +2349,47 @@ if (portraitMq.addEventListener) {
 
 applySidewaysState();
 
-/* SWIPE-TO-TURN ON CANVAS */
+/* WHOLE-SCREEN GESTURES: tap to pause, swipe to turn */
 const SWIPE_MIN_PX = 18;
-let swipeStart = null;
+const TAP_MAX_PX = 10;
+let gestureStart = null;
+const canvasEl = document.getElementById("game");
 
-function handleSwipeStart(e) {
-  if (e.pointerType === "mouse") return;
-  swipeStart = { x: e.clientX, y: e.clientY };
-  // Capture so pointerup fires here even if the finger drifts off-canvas (Android/iOS).
-  if (canvasEl.setPointerCapture) {
-    try { canvasEl.setPointerCapture(e.pointerId); } catch (_) {}
-  }
+function isInteractiveTarget(t) {
+  if (!t || !t.closest) return false;
+  return !!t.closest("button, select, input, label, .modal-content, .switch, .toggle-row");
 }
 
-function handleSwipeEnd(e) {
-  if (!swipeStart) return;
-  const dxPx = e.clientX - swipeStart.x;
-  const dyPx = e.clientY - swipeStart.y;
-  swipeStart = null;
+function isModalOpen() {
+  return [soundModal, continueModal, howToPlayModal, pauseModal].some(
+    (m) => m && m.style.display === "block"
+  );
+}
+
+function handleGestureStart(e) {
+  if (e.pointerType === "mouse") return;
+  if (isInteractiveTarget(e.target)) return;
+  // Don't capture gestures while a modal is open — let modal scroll naturally.
+  if (isModalOpen()) return;
+  gestureStart = { x: e.clientX, y: e.clientY };
+}
+
+function handleGestureEnd(e) {
+  if (!gestureStart) return;
+  const dxPx = e.clientX - gestureStart.x;
+  const dyPx = e.clientY - gestureStart.y;
+  gestureStart = null;
 
   const absX = Math.abs(dxPx);
   const absY = Math.abs(dyPx);
-  if (Math.max(absX, absY) < SWIPE_MIN_PX) return;
+  const maxMove = Math.max(absX, absY);
+
+  if (maxMove < TAP_MAX_PX) {
+    togglePauseFromControl();
+    return;
+  }
+
+  if (maxMove < SWIPE_MIN_PX) return;
 
   if (absX > absY) {
     queueDirectionByName(dxPx > 0 ? "right" : "left");
@@ -2299,10 +2398,9 @@ function handleSwipeEnd(e) {
   }
 }
 
-const canvasEl = document.getElementById("game");
-canvasEl.addEventListener("pointerdown", handleSwipeStart);
-canvasEl.addEventListener("pointerup", handleSwipeEnd);
-canvasEl.addEventListener("pointercancel", () => { swipeStart = null; });
+document.addEventListener("pointerdown", handleGestureStart);
+document.addEventListener("pointerup", handleGestureEnd);
+document.addEventListener("pointercancel", () => { gestureStart = null; });
 canvasEl.addEventListener("contextmenu", (e) => e.preventDefault());
 
 document.getElementById("speed").addEventListener("change", () => {
