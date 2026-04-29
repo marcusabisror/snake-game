@@ -595,8 +595,14 @@
       transform: scale(0.97);
     }
 
-    body.in-run #pre-game-panel {
+    body.in-run #controls,
+    body.in-run .assistive-note {
       display: none;
+    }
+
+    body.in-run #pre-game-panel {
+      padding: 6px 8px;
+      background: rgba(17, 30, 39, 0.45);
     }
 
     .icon-btn {
@@ -764,8 +770,8 @@
       }
 
       body.in-run #game-wrapper {
-        width: max(260px, min(96vw, calc(100vh - 240px)));
-        width: max(260px, min(96vw, calc(100dvh - 240px)));
+        width: max(260px, min(96vw, calc(100vh - 280px)));
+        width: max(260px, min(96vw, calc(100dvh - 280px)));
       }
 
       /* Sideways mode: board on the left, D-pad on the right */
@@ -813,8 +819,8 @@
       }
 
       body.sideways.in-run #game-wrapper {
-        width: min(calc(100vw - 240px), calc(100vh - 140px));
-        width: min(calc(100vw - 240px), calc(100dvh - 140px));
+        width: min(calc(100vw - 240px), calc(100vh - 180px));
+        width: min(calc(100vw - 240px), calc(100dvh - 180px));
       }
 
       body.sideways #touch-controls {
