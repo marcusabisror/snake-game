@@ -1177,6 +1177,7 @@
       <button id="redoKeyBtn" class="modal-btn secondary">↶ Redo (Use Key)</button>
       <button id="buyRedoBtn" class="modal-btn warning">Buy Keys (Continue + Redo)</button>
       </div>
+      <button id="endGameFromPauseBtn" class="modal-btn danger">End Game</button>
     </div>
   </div>
 
@@ -2277,6 +2278,27 @@ document.getElementById("buyRedoBtn").onclick = () => {
   updateKeysDisplay();
   updateRedoText();
 };
+
+function endRunFromPause() {
+  gameSessionToken++;
+  stopGameLoop();
+  clearUiTimers();
+  stopCelebration();
+  paused = false;
+  isGameRunning = false;
+  isGameOver = false;
+  isWin = false;
+  inCountdown = false;
+  pauseModal.style.display = "none";
+  continueModal.style.display = "none";
+  document.body.classList.remove("in-run");
+  document.getElementById("restart").style.display = "none";
+  document.getElementById("pauseBtn").innerText = "Pause";
+  clearTransientVisualState();
+  updateStatus("Press Start to begin.");
+}
+
+document.getElementById("endGameFromPauseBtn").addEventListener("click", endRunFromPause);
 
 document.querySelectorAll(".touch-btn").forEach((button) => {
   const dir = button.getAttribute("data-dir");
