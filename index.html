@@ -13,15 +13,31 @@
   <title>Snake Game</title>
   <style>
     :root {
-      --bg: #101820;
-      --panel: #1b2a35;
-      --panel-border: #2d4658;
-      --text: #eef6fb;
+      --bg: #0a0f18;
+      --bg-deep: #050810;
+      --panel: rgba(20, 30, 45, 0.72);
+      --panel-solid: #131c2a;
+      --panel-border: rgba(120, 165, 200, 0.18);
+      --panel-border-strong: rgba(120, 165, 200, 0.32);
+      --text: #e8f2fb;
+      --text-dim: #93b2ce;
+      --text-mute: #6c8aa3;
       --accent: #4dd0e1;
+      --accent-hot: #00e5ff;
+      --magenta: #c084fc;
       --danger: #ff6b6b;
       --food: #ff3b30;
       --snake-head: #00e5ff;
       --snake-body: #2ecc71;
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-pill: 999px;
+      --shadow-soft: 0 10px 30px rgba(0,0,0,0.35);
+      --shadow-hard: 0 18px 44px rgba(0,0,0,0.55);
+      --ring-accent: 0 0 0 2px rgba(77, 208, 225, 0.85), 0 0 0 6px rgba(77, 208, 225, 0.18);
+      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-spring: cubic-bezier(0.34, 1.4, 0.5, 1);
     }
 
     * {
@@ -38,11 +54,17 @@
     }
 
     body {
-      background: radial-gradient(circle at top, #163246 0%, var(--bg) 60%);
+      background:
+        radial-gradient(1100px 600px at 85% -10%, rgba(192, 132, 252, 0.10), transparent 60%),
+        radial-gradient(900px 520px at 8% 110%, rgba(77, 208, 225, 0.10), transparent 60%),
+        radial-gradient(circle at top, #122236 0%, var(--bg) 55%, var(--bg-deep) 100%);
       margin: 0;
       color: var(--text);
-      font-family: "Segoe UI", Arial, sans-serif;
-      padding: 12px;
+      font-family: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      letter-spacing: 0.005em;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      padding: 14px;
       box-sizing: border-box;
       min-height: 100vh;
       min-height: 100dvh;
@@ -60,14 +82,20 @@
     }
 
     #pre-game-panel {
+      position: relative;
+      z-index: 20;
       width: 100%;
-      background: rgba(17, 30, 39, 0.85);
+      background:
+        linear-gradient(180deg, rgba(28, 40, 58, 0.78), rgba(18, 28, 42, 0.78));
       border: 1px solid var(--panel-border);
-      border-radius: 12px;
-      padding: 10px;
+      border-radius: var(--radius-lg);
+      padding: 14px;
       box-sizing: border-box;
       display: grid;
-      gap: 10px;
+      gap: 12px;
+      backdrop-filter: blur(14px) saturate(140%);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
     #controls {
@@ -80,27 +108,37 @@
     }
 
     #controls label {
-      font-size: 13px;
-      color: #b5d6e8;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-mute);
       justify-self: start;
       align-self: end;
-    }
-
-    select, button {
-      min-height: 42px;
-      padding: 8px 10px;
-      font-size: 14px;
-      border-radius: 8px;
-      border: 1px solid #3c5d72;
-      background: #264353;
-      color: var(--text);
+      margin-bottom: 4px;
+      display: block;
     }
 
     button {
+      min-height: 44px;
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--panel-border-strong);
+      background: linear-gradient(180deg, rgba(40, 58, 80, 0.95) 0%, rgba(28, 42, 60, 0.95) 100%);
+      color: var(--text);
       cursor: pointer;
       touch-action: manipulation;
-      transition: transform 90ms ease, filter 120ms ease, box-shadow 120ms ease;
+      transition: transform 100ms var(--ease-spring), filter 140ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
       will-change: transform;
+    }
+
+    button:hover {
+      border-color: rgba(120, 165, 200, 0.55);
+      filter: brightness(1.05);
     }
 
     button:active,
@@ -109,13 +147,31 @@
       filter: brightness(1.08);
     }
 
+    button:focus-visible {
+      outline: none;
+      box-shadow: var(--ring-accent);
+      border-color: var(--accent);
+    }
+
     .primary-btn {
-      background: linear-gradient(180deg, #2da7b7 0%, #1f8996 100%);
-      border-color: #57deed;
+      background: linear-gradient(135deg, #5be1f0 0%, #2da7b7 55%, #1f8996 100%);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #ffffff;
       font-weight: 700;
       font-size: 16px;
-      padding: 12px 14px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+      padding: 14px 18px;
+      letter-spacing: 0.02em;
+      border-radius: var(--radius-md);
+      box-shadow:
+        0 8px 22px rgba(77, 208, 225, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    .primary-btn:hover {
+      filter: brightness(1.07);
+      box-shadow:
+        0 10px 26px rgba(77, 208, 225, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.32);
     }
 
     .secondary-actions {
@@ -128,15 +184,21 @@
     }
 
     .shop-btn {
-      background: transparent;
-      border-color: #365666;
-      color: #9dc2d7;
-      opacity: 0.78;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(120, 165, 200, 0.20);
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .shop-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
     }
 
     .assistive-note {
       font-size: 12px;
-      color: #a7c9dc;
+      color: var(--text-mute);
+      letter-spacing: 0.01em;
     }
 
     #top-bar {
@@ -145,12 +207,16 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 5px;
-      gap: 8px;
-      background: rgba(17, 30, 39, 0.85);
+      gap: 10px;
+      background:
+        linear-gradient(180deg, rgba(28, 40, 58, 0.72), rgba(18, 28, 42, 0.72));
       border: 1px solid var(--panel-border);
-      border-radius: 10px;
-      padding: 8px;
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
       box-sizing: border-box;
+      backdrop-filter: blur(12px) saturate(140%);
+      -webkit-backdrop-filter: blur(12px) saturate(140%);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.04);
     }
 
     #top-bar-right {
@@ -161,9 +227,12 @@
 
     canvas {
       background: linear-gradient(180deg, #0b1117 0%, #0d1922 100%);
-      border: 2px solid var(--panel-border);
-      border-radius: 10px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      border: 1px solid var(--panel-border-strong);
+      border-radius: var(--radius-md);
+      box-shadow:
+        0 14px 38px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(77, 208, 225, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
       touch-action: none;
       width: 100%;
       height: 100%;
@@ -204,12 +273,12 @@
     #progress-tube {
       position: relative;
       width: 150px;
-      height: 16px;
-      border: 2px solid #4a6e84;
-      border-radius: 999px;
-      background: #1a1a1a;
+      height: 14px;
+      border: 1px solid rgba(120, 165, 200, 0.28);
+      border-radius: var(--radius-pill);
+      background: rgba(8, 14, 24, 0.85);
       overflow: hidden;
-      box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.65);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
     }
 
     #progress-fill {
@@ -221,11 +290,13 @@
         linear-gradient(
           to right,
           #2ecc71 0%,
-          #2ecc71 70%,
+          #4dd0e1 70%,
           #00e5ff 100%
         );
-      transition: width 120ms linear;
-      box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.28);
+      transition: width 220ms var(--ease-out-expo);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 0 12px rgba(77, 208, 225, 0.35);
     }
 
     #progress-fill::after {
@@ -248,16 +319,22 @@
       opacity: 1;
     }
 
-    #keysDisplay { font-size: 14px; color: #ddd; }
-    #keysHelp { font-size: 12px; color: #9ec2d6; margin-top: 2px; }
+    #keysDisplay { font-size: 14px; color: var(--text); font-weight: 600; }
+    #keysHelp { font-size: 12px; color: var(--text-mute); margin-top: 2px; }
 
     .settings-btn {
-      padding: 8px 16px;
-      background: #335265;
+      padding: 9px 16px;
+      background: rgba(255, 255, 255, 0.06);
       color: var(--text);
-      border: none;
-      border-radius: 6px;
+      border: 1px solid rgba(120, 165, 200, 0.22);
+      border-radius: var(--radius-md);
       cursor: pointer;
+      font-weight: 500;
+    }
+
+    .settings-btn:hover {
+      background: rgba(255, 255, 255, 0.10);
+      border-color: rgba(120, 165, 200, 0.40);
     }
 
     .modal {
@@ -266,19 +343,27 @@
       z-index: 999;
       left: 0; top: 0;
       width: 100%; height: 100%;
-      background-color: rgba(0,0,0,0.55);
+      background: rgba(5, 10, 20, 0.55);
+      backdrop-filter: blur(10px) saturate(140%);
+      -webkit-backdrop-filter: blur(10px) saturate(140%);
+    }
+
+    .modal[style*="display: block"] .modal-content,
+    .modal[style*="display:block"] .modal-content {
+      animation: modal-pop 240ms var(--ease-out-expo);
     }
 
     .modal-content {
-      background: var(--panel);
+      background:
+        linear-gradient(180deg, rgba(36, 50, 70, 0.92) 0%, rgba(20, 30, 45, 0.96) 100%);
       margin: 8% auto;
-      padding: 20px;
-      width: 320px;
-      color: white;
-      border-radius: 10px;
+      padding: 22px 22px 18px;
+      width: 340px;
+      color: var(--text);
+      border-radius: var(--radius-lg);
       text-align: center;
-      border: 1px solid var(--panel-border);
-      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      border: 1px solid var(--panel-border-strong);
+      box-shadow: var(--shadow-hard), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       max-height: 85vh;
       max-height: 85dvh;
       overflow-y: auto;
@@ -287,10 +372,20 @@
       touch-action: pan-y;
     }
 
-    .modal-content h2 { margin: 0 0 8px; }
-    .modal-content p { margin: 8px 0; line-height: 1.4; }
-    .modal-help { color: #b7d7e8; font-size: 13px; }
-    .modal-actions { display: grid; gap: 8px; margin-top: 10px; }
+    .modal-content h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .modal-content p { margin: 8px 0; line-height: 1.5; font-size: 14px; color: var(--text-dim); }
+    .modal-help { color: var(--text-mute); font-size: 13px; }
+    .modal-actions { display: grid; gap: 10px; margin-top: 14px; }
+
+    @keyframes modal-pop {
+      0% { opacity: 0; transform: translateY(8px) scale(0.96); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
 
     #howToPlayModal .modal-content {
       max-height: 75vh;
@@ -302,14 +397,16 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin: 12px 0;
-      font-size: 16px;
+      margin: 14px 0;
+      font-size: 15px;
+      font-weight: 500;
     }
 
     .switch {
       position: relative;
-      width: 50px;
-      height: 24px;
+      width: 52px;
+      height: 30px;
+      flex-shrink: 0;
     }
 
     .switch input {
@@ -319,52 +416,96 @@
     .slider {
       position: absolute;
       cursor: pointer;
-      background-color: #777;
-      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-pill);
       top: 0; left: 0; right: 0; bottom: 0;
-      transition: .4s;
+      transition: background 220ms ease, box-shadow 220ms ease;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
     }
 
     .slider:before {
       position: absolute;
       content: "";
-      height: 18px;
-      width: 18px;
+      height: 24px;
+      width: 24px;
       left: 3px;
       bottom: 3px;
-      background-color: white;
+      background: linear-gradient(180deg, #ffffff 0%, #e0eaf3 100%);
       border-radius: 50%;
-      transition: .4s;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      transition: transform 260ms var(--ease-spring);
     }
 
     input:checked + .slider {
-      background-color: #4caf50;
+      background: linear-gradient(135deg, #4dd0e1 0%, #2da7b7 100%);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 14px rgba(77, 208, 225, 0.35);
     }
 
     input:checked + .slider:before {
-      transform: translateX(26px);
+      transform: translateX(22px);
     }
 
     .close-btn,
     .modal-btn {
-      padding: 8px 16px;
-      background: #555;
-      border: none;
-      color: white;
-      border-radius: 6px;
+      padding: 11px 18px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(120, 165, 200, 0.22);
+      color: var(--text);
+      border-radius: var(--radius-md);
       cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      transition: transform 100ms var(--ease-spring), filter 140ms ease, box-shadow 160ms ease, border-color 160ms ease;
     }
 
-    .modal-btn.primary { background: #2e7d32; }
-    .modal-btn.secondary { background: #1565c0; }
-    .modal-btn.warning { background: #8e24aa; }
-    .modal-btn.danger { background: #6d4c41; }
-    .modal-btn.restart {
-      background: #444;
-      border: 1px solid #777;
+    .close-btn:hover,
+    .modal-btn:hover {
+      filter: brightness(1.08);
     }
+
+    .close-btn:active,
+    .modal-btn:active {
+      transform: scale(0.97);
+    }
+
+    .modal-btn.primary {
+      background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+      border-color: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    }
+
+    .modal-btn.secondary {
+      background: linear-gradient(135deg, #5fa7ff 0%, #3b82f6 100%);
+      border-color: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      box-shadow: 0 6px 18px rgba(59, 130, 246, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    }
+
+    .modal-btn.warning {
+      background: linear-gradient(135deg, #c084fc 0%, #9333ea 100%);
+      border-color: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      box-shadow: 0 6px 18px rgba(147, 51, 234, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    }
+
+    .modal-btn.danger {
+      background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
+      border-color: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      box-shadow: 0 6px 18px rgba(220, 38, 38, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    }
+
+    .modal-btn.restart {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: var(--text-dim);
+    }
+
     .modal-btn.warning.soft {
-      opacity: 0.84;
+      opacity: 0.88;
       filter: saturate(0.85);
     }
 
@@ -568,31 +709,31 @@
     .touch-btn {
       width: 64px;
       height: 64px;
-      border-radius: 14px;
-      border: 1px solid #4f7085;
-      background: #254557;
-      color: white;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(120, 165, 200, 0.32);
+      background: linear-gradient(180deg, rgba(40, 58, 80, 0.95) 0%, rgba(28, 42, 60, 0.95) 100%);
+      color: var(--text);
       font-size: 26px;
       font-weight: 700;
       line-height: 1;
       cursor: pointer;
       padding: 0;
       touch-action: manipulation;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
 
     .touch-btn:active {
-      transform: translateY(1px) scale(0.98);
-      background: #2f5f76;
+      transform: translateY(1px) scale(0.97);
+      background: linear-gradient(180deg, rgba(54, 76, 100, 1) 0%, rgba(40, 58, 80, 1) 100%);
     }
 
     button.dpad-center {
       width: 64px;
       height: 64px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(152, 199, 223, 0.35);
-      color: #b5d6e8;
+      border-radius: var(--radius-md);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(152, 199, 223, 0.30);
+      color: var(--text-dim);
       font-size: 22px;
       font-weight: 700;
       line-height: 1;
@@ -602,7 +743,7 @@
     }
 
     button.dpad-center:active {
-      background: rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.14);
       transform: scale(0.97);
     }
 
@@ -1021,6 +1162,138 @@
       }
     }
 
+    /* CUSTOM SELECT COMPONENT */
+    .cselect {
+      position: relative;
+      width: 100%;
+    }
+
+    .cselect select.cselect-native {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0);
+      border: 0;
+    }
+
+    .cselect-btn {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      background: linear-gradient(180deg, rgba(40, 58, 80, 0.95) 0%, rgba(28, 42, 60, 0.95) 100%);
+      border: 1px solid var(--panel-border-strong);
+      border-radius: var(--radius-md);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 160ms ease, box-shadow 160ms ease, transform 100ms var(--ease-spring);
+    }
+
+    .cselect-btn:hover {
+      border-color: rgba(120, 165, 200, 0.55);
+    }
+
+    .cselect-btn:focus-visible {
+      outline: none;
+      box-shadow: var(--ring-accent);
+      border-color: var(--accent);
+    }
+
+    .cselect[data-open="true"] .cselect-btn {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(77, 208, 225, 0.16);
+    }
+
+    .cselect-btn .chevron {
+      width: 14px;
+      height: 14px;
+      color: var(--text-dim);
+      flex-shrink: 0;
+      transition: transform 220ms var(--ease-out-expo);
+    }
+
+    .cselect[data-open="true"] .cselect-btn .chevron {
+      transform: rotate(180deg);
+    }
+
+    .cselect-panel {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 200;
+      padding: 6px;
+      border-radius: var(--radius-md);
+      background:
+        linear-gradient(180deg, rgba(36, 50, 70, 0.96) 0%, rgba(20, 30, 45, 0.98) 100%);
+      border: 1px solid var(--panel-border-strong);
+      box-shadow: var(--shadow-hard), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px) saturate(150%);
+      -webkit-backdrop-filter: blur(16px) saturate(150%);
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+      transform-origin: top center;
+    }
+
+    .cselect[data-open="true"] .cselect-panel {
+      display: flex;
+      animation: cselect-pop 180ms var(--ease-out-expo);
+    }
+
+    @keyframes cselect-pop {
+      0%   { opacity: 0; transform: translateY(-4px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .cselect-opt {
+      width: 100%;
+      min-height: 38px;
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius-sm);
+      text-align: left;
+      cursor: pointer;
+      transition: background 120ms ease, color 120ms ease;
+    }
+
+    .cselect-opt:hover,
+    .cselect-opt:focus-visible {
+      background: rgba(77, 208, 225, 0.10);
+      outline: none;
+    }
+
+    .cselect-opt[aria-selected="true"] {
+      background: linear-gradient(180deg, rgba(77, 208, 225, 0.18), rgba(77, 208, 225, 0.06));
+      color: #d6f7ff;
+    }
+
+    .cselect-opt[aria-selected="true"]::after {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      flex-shrink: 0;
+    }
+
   </style>
 </head>
 
@@ -1032,22 +1305,45 @@
       <button id="start" class="primary-btn">Start Game</button>
 
       <div>
-        <label>Board Size:</label>
-        <select id="board">
-          <option value="16" selected>16×16</option>
-          <option value="14">14×14</option>
-          <option value="10">10×10</option>
-          <option value="8">8×8</option>
-          <option value="4">4×4 (Practice)</option>
-        </select>
+        <label for="boardBtn">Board Size</label>
+        <div class="cselect" data-cselect>
+          <button id="boardBtn" type="button" class="cselect-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="boardPanel">
+            <span class="cselect-label">16×16</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div id="boardPanel" class="cselect-panel" role="listbox" aria-labelledby="boardBtn" tabindex="-1">
+            <button type="button" class="cselect-opt" role="option" data-value="16" aria-selected="true">16×16</button>
+            <button type="button" class="cselect-opt" role="option" data-value="14" aria-selected="false">14×14</button>
+            <button type="button" class="cselect-opt" role="option" data-value="10" aria-selected="false">10×10</button>
+            <button type="button" class="cselect-opt" role="option" data-value="8" aria-selected="false">8×8</button>
+            <button type="button" class="cselect-opt" role="option" data-value="4" aria-selected="false">4×4 (Practice)</button>
+          </div>
+          <select id="board" class="cselect-native" tabindex="-1" aria-hidden="true">
+            <option value="16" selected>16×16</option>
+            <option value="14">14×14</option>
+            <option value="10">10×10</option>
+            <option value="8">8×8</option>
+            <option value="4">4×4 (Practice)</option>
+          </select>
+        </div>
       </div>
 
       <div>
-        <label>Speed:</label>
-        <select id="speed">
-          <option value="300" selected>Regular</option>
-          <option value="200">Fast</option>
-        </select>
+        <label for="speedBtn">Speed</label>
+        <div class="cselect" data-cselect>
+          <button id="speedBtn" type="button" class="cselect-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="speedPanel">
+            <span class="cselect-label">Regular</span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div id="speedPanel" class="cselect-panel" role="listbox" aria-labelledby="speedBtn" tabindex="-1">
+            <button type="button" class="cselect-opt" role="option" data-value="300" aria-selected="true">Regular</button>
+            <button type="button" class="cselect-opt" role="option" data-value="200" aria-selected="false">Fast</button>
+          </div>
+          <select id="speed" class="cselect-native" tabindex="-1" aria-hidden="true">
+            <option value="300" selected>Regular</option>
+            <option value="200">Fast</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -2579,7 +2875,110 @@ document.getElementById("board").addEventListener("change", () => {
   }
 });
 
+/* CUSTOM SELECT — keyboard-accessible dropdown that mirrors a hidden <select> */
+function closeAllCSelects(except) {
+  document.querySelectorAll('.cselect[data-open="true"]').forEach((w) => {
+    if (w !== except) {
+      w.dataset.open = "false";
+      const b = w.querySelector(".cselect-btn");
+      if (b) b.setAttribute("aria-expanded", "false");
+    }
+  });
+}
+
+function initCustomSelects() {
+  const widgets = document.querySelectorAll(".cselect[data-cselect]");
+  widgets.forEach((wrap) => {
+    const sel = wrap.querySelector("select.cselect-native");
+    const btn = wrap.querySelector(".cselect-btn");
+    const label = wrap.querySelector(".cselect-label");
+    const opts = Array.from(wrap.querySelectorAll(".cselect-opt"));
+
+    const syncFromSelect = (silent) => {
+      const val = sel.value;
+      let matched = null;
+      opts.forEach((o) => {
+        const isSel = o.dataset.value === val;
+        o.setAttribute("aria-selected", isSel ? "true" : "false");
+        if (isSel) matched = o;
+      });
+      if (matched && label) label.textContent = matched.textContent.trim();
+      if (!silent) sel.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+
+    const open = () => {
+      closeAllCSelects(wrap);
+      wrap.dataset.open = "true";
+      btn.setAttribute("aria-expanded", "true");
+      const current = opts.find((o) => o.getAttribute("aria-selected") === "true") || opts[0];
+      if (current) current.focus();
+    };
+
+    const close = (returnFocus) => {
+      wrap.dataset.open = "false";
+      btn.setAttribute("aria-expanded", "false");
+      if (returnFocus) btn.focus();
+    };
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (wrap.dataset.open === "true") close(false);
+      else open();
+    });
+
+    btn.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        open();
+      }
+    });
+
+    opts.forEach((opt) => {
+      opt.addEventListener("click", (e) => {
+        e.stopPropagation();
+        sel.value = opt.dataset.value;
+        syncFromSelect(false);
+        close(true);
+      });
+      opt.addEventListener("keydown", (e) => {
+        const idx = opts.indexOf(opt);
+        if (e.key === "ArrowDown") { e.preventDefault(); opts[(idx + 1) % opts.length].focus(); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); opts[(idx - 1 + opts.length) % opts.length].focus(); }
+        else if (e.key === "Home") { e.preventDefault(); opts[0].focus(); }
+        else if (e.key === "End") { e.preventDefault(); opts[opts.length - 1].focus(); }
+        else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); opt.click(); }
+        else if (e.key === "Escape") { e.preventDefault(); close(true); }
+        else if (e.key === "Tab") { close(false); }
+      });
+    });
+
+    sel.addEventListener("change", () => syncFromSelect(true));
+    syncFromSelect(true);
+  });
+
+  document.addEventListener("click", (e) => {
+    document.querySelectorAll('.cselect[data-open="true"]').forEach((w) => {
+      if (!w.contains(e.target)) {
+        w.dataset.open = "false";
+        const b = w.querySelector(".cselect-btn");
+        if (b) b.setAttribute("aria-expanded", "false");
+      }
+    });
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      document.querySelectorAll('.cselect[data-open="true"]').forEach((w) => {
+        w.dataset.open = "false";
+        const b = w.querySelector(".cselect-btn");
+        if (b) b.setAttribute("aria-expanded", "false");
+      });
+    }
+  });
+}
+
 /* INITIAL */
+initCustomSelects();
 updateSoundSettings();
 updateKeysDisplay();
 refreshCanvasColors();
