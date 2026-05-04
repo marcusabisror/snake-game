@@ -1310,40 +1310,51 @@ function playWinFanfare() {
   if (!masterSound || !effectsEnabled) return;
   const audioCtx = ensureAudioContext();
   if (!audioCtx) return;
-  const now = audioCtx.currentTime + 0.03;
-  const notes = [523.25, 659.25, 783.99, 1046.5, 1174.66, 1318.51];
+  const start = audioCtx.currentTime + 0.03;
 
-  notes.forEach((freq, i) => {
-    const t = now + i * 0.16;
+  const playTone = (freq, t, dur, peak, type) => {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-
-    osc.type = i % 2 === 0 ? "triangle" : "sine";
+    osc.type = type;
     osc.frequency.setValueAtTime(freq, t);
     gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.22, t + 0.04);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
-
+    gain.gain.exponentialRampToValueAtTime(peak, t + 0.025);
+    gain.gain.exponentialRampToValueAtTime(Math.max(peak * 0.55, 0.0002), t + dur * 0.7);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     osc.connect(gain);
     gain.connect(audioCtx.destination);
     osc.start(t);
-    osc.stop(t + 0.38);
+    osc.stop(t + dur + 0.05);
+  };
+
+  // Triadic bugle ascent: G4 → C5 → E5 → G5
+  const runup = [392.00, 523.25, 659.25, 783.99];
+  runup.forEach((f, i) => {
+    const t = start + i * 0.13;
+    playTone(f, t, 0.16, 0.20, "sawtooth");
+    playTone(f, t, 0.16, 0.10, "triangle");
   });
 
-  const finalStart = now + notes.length * 0.16;
-  const finalOsc = audioCtx.createOscillator();
-  const finalGain = audioCtx.createGain();
-  finalOsc.type = "sawtooth";
-  finalOsc.frequency.setValueAtTime(1318.51, finalStart);
-  finalOsc.frequency.exponentialRampToValueAtTime(1760, finalStart + 0.35);
-  finalGain.gain.setValueAtTime(0.0001, finalStart);
-  finalGain.gain.exponentialRampToValueAtTime(0.16, finalStart + 0.08);
-  finalGain.gain.exponentialRampToValueAtTime(0.0001, finalStart + 0.9);
+  // Held C-major chord (C5 / E5 / G5 / C6) — triumphant resolve
+  const chordStart = start + runup.length * 0.13 + 0.05;
+  const chord = [523.25, 659.25, 783.99, 1046.50];
+  chord.forEach((f) => {
+    playTone(f, chordStart, 1.15, 0.09, "sawtooth");
+    playTone(f, chordStart, 1.15, 0.05, "triangle");
+  });
 
-  finalOsc.connect(finalGain);
-  finalGain.connect(audioCtx.destination);
-  finalOsc.start(finalStart);
-  finalOsc.stop(finalStart + 1);
+  // C3 bass for body
+  const bassOsc = audioCtx.createOscillator();
+  const bassGain = audioCtx.createGain();
+  bassOsc.type = "triangle";
+  bassOsc.frequency.setValueAtTime(130.81, chordStart);
+  bassGain.gain.setValueAtTime(0.0001, chordStart);
+  bassGain.gain.exponentialRampToValueAtTime(0.18, chordStart + 0.05);
+  bassGain.gain.exponentialRampToValueAtTime(0.0001, chordStart + 1.2);
+  bassOsc.connect(bassGain);
+  bassGain.connect(audioCtx.destination);
+  bassOsc.start(chordStart);
+  bassOsc.stop(chordStart + 1.3);
 }
 
 /* SYNTH BGM — chiptune loop in A minor, lead + bass */
@@ -2131,7 +2142,11 @@ function winGame() {
   screenDim.classList.add("visible");
   updateStatus("Perfect run! Press Restart to play again.");
 
+  stopBgm();
   playWinSound();
+  // Win fanfare runs ~1.8s; resume BGM right after for the post-win screen
+  // (respecting current sound settings).
+  setTimeout(() => updateBGM(), 2000);
   vibrate([30, 60, 30, 60, 120]);
   draw();
   launchCelebration();
