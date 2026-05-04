@@ -1223,63 +1223,71 @@
     <button class="rotate-prompt-cancel" id="cancelSidewaysBtn">Cancel sideways mode</button>
   </div>
 <script>
-/* LOAD SOUNDS */
-const eatSound = new Audio("sounds/eat_beep.wav");
-const eat10Sound = new Audio("sounds/eat10.wav");
-const winSound = new Audio("sounds/win.wav");
-const gameOverSound = new Audio("sounds/game_over.wav");
-const bgm = new Audio("sounds/bg_loop.wav");
-bgm.loop = true;
-bgm.volume = 0.15;
-
 /* SOUND SETTINGS */
 let masterSound = true;
 let effectsEnabled = true;
 let bgmEnabled = true;
 
-function resetAndPlay(audio) {
-  try {
-    audio.pause();
-    audio.currentTime = 0;
-    audio.play().catch(() => {});
-  } catch (_) {}
-}
-
 function updateSoundSettings() {
-  if (!masterSound) {
-    eatSound.volume = 0;
-    eat10Sound.volume = 0;
-    winSound.volume = 0;
-    gameOverSound.volume = 0;
-    bgm.volume = 0;
-    return;
-  }
-
-  eatSound.volume = effectsEnabled ? 1 : 0;
-  eat10Sound.volume = effectsEnabled ? 1 : 0;
-  winSound.volume = effectsEnabled ? 1 : 0;
-  gameOverSound.volume = effectsEnabled ? 1 : 0;
-  bgm.volume = bgmEnabled ? 0.15 : 0;
+  setBgmGainTarget();
 }
 
 function playEatSound() {
   if (!masterSound || !effectsEnabled) return;
-  resetAndPlay(eatSound);
-}
+  const ctx = ensureAudioContext();
+  if (!ctx) return;
+  const t = ctx.currentTime + 0.005;
+  // Two-layer blip: a body + a high "tick" so it cuts through the BGM.
+  const bodyOsc = ctx.createOscillator();
+  const bodyGain = ctx.createGain();
+  bodyOsc.type = "triangle";
+  bodyOsc.frequency.setValueAtTime(740, t);
+  bodyOsc.frequency.exponentialRampToValueAtTime(1240, t + 0.08);
+  bodyGain.gain.setValueAtTime(0.0001, t);
+  bodyGain.gain.exponentialRampToValueAtTime(0.28, t + 0.006);
+  bodyGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+  bodyOsc.connect(bodyGain);
+  bodyGain.connect(ctx.destination);
+  bodyOsc.start(t);
+  bodyOsc.stop(t + 0.16);
 
-function playEat10Sound() {
-  if (!masterSound || !effectsEnabled) return;
-  resetAndPlay(eat10Sound);
+  const tickOsc = ctx.createOscillator();
+  const tickGain = ctx.createGain();
+  tickOsc.type = "triangle";
+  tickOsc.frequency.setValueAtTime(1760, t);
+  tickGain.gain.setValueAtTime(0.0001, t);
+  tickGain.gain.exponentialRampToValueAtTime(0.16, t + 0.004);
+  tickGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+  tickOsc.connect(tickGain);
+  tickGain.connect(ctx.destination);
+  tickOsc.start(t);
+  tickOsc.stop(t + 0.07);
 }
 
 function playGameOverSound() {
   if (!masterSound || !effectsEnabled) return;
-  resetAndPlay(gameOverSound);
+  const ctx = ensureAudioContext();
+  if (!ctx) return;
+  const start = ctx.currentTime + 0.02;
+  const notes = [440, 349.23, 293.66, 220];
+  notes.forEach((freq, i) => {
+    const last = i === notes.length - 1;
+    const t = start + i * 0.16;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = last ? "sawtooth" : "triangle";
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(last ? 0.18 : 0.2, t + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + (last ? 0.55 : 0.22));
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + (last ? 0.65 : 0.3));
+  });
 }
 
 function playWinSound() {
-  if (!masterSound || !effectsEnabled) return;
-  resetAndPlay(winSound);
   playWinFanfare();
 }
 
@@ -1338,11 +1346,100 @@ function playWinFanfare() {
   finalOsc.stop(finalStart + 1);
 }
 
+/* SYNTH BGM — chiptune loop in A minor, lead + bass */
+const BGM_BPM = 124;
+const BGM_STEP_SEC = 60 / BGM_BPM / 2; // 8th-note grid
+const BGM_LEAD = [
+  440.00, 0,      523.25, 0,      659.25, 587.33, 523.25, 0,
+  392.00, 0,      523.25, 0,      659.25, 783.99, 659.25, 587.33,
+  440.00, 0,      523.25, 587.33, 659.25, 0,      587.33, 523.25,
+  493.88, 0,      587.33, 0,      659.25, 587.33, 523.25, 0,
+];
+const BGM_BASS = [
+  110.00, 0, 0, 0, 164.81, 0, 0, 0,
+   98.00, 0, 0, 0, 130.81, 0, 0, 0,
+  110.00, 0, 0, 0, 146.83, 0, 0, 0,
+   98.00, 0, 0, 0, 130.81, 0, 0, 0,
+];
+
+let bgmGainNode = null;
+let bgmIntervalId = null;
+let bgmStep = 0;
+let bgmNextTime = 0;
+
+function setBgmGainTarget() {
+  if (!bgmGainNode || !sharedAudioCtx) return;
+  const target = (masterSound && bgmEnabled) ? 0.32 : 0;
+  const now = sharedAudioCtx.currentTime;
+  bgmGainNode.gain.cancelScheduledValues(now);
+  bgmGainNode.gain.setTargetAtTime(target, now, 0.05);
+}
+
+function bgmScheduleNote(time, freq, type, peak, durSec) {
+  if (!freq || !sharedAudioCtx || !bgmGainNode) return;
+  const ctx = sharedAudioCtx;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, time);
+  gain.gain.setValueAtTime(0.0001, time);
+  gain.gain.exponentialRampToValueAtTime(peak, time + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + durSec * 0.92);
+  osc.connect(gain);
+  gain.connect(bgmGainNode);
+  osc.start(time);
+  osc.stop(time + durSec);
+}
+
+function bgmTick() {
+  if (!sharedAudioCtx || !bgmGainNode) return;
+  const ctx = sharedAudioCtx;
+  const lookAhead = 0.2;
+  while (bgmNextTime < ctx.currentTime + lookAhead) {
+    const i = bgmStep % BGM_LEAD.length;
+    bgmScheduleNote(bgmNextTime, BGM_LEAD[i], "triangle", 0.22, BGM_STEP_SEC * 0.95);
+    bgmScheduleNote(bgmNextTime, BGM_BASS[i], "square", 0.14, BGM_STEP_SEC * 1.9);
+    bgmStep++;
+    bgmNextTime += BGM_STEP_SEC;
+  }
+}
+
+function startBgm() {
+  const ctx = ensureAudioContext();
+  if (!ctx) return;
+  if (!bgmGainNode) {
+    bgmGainNode = ctx.createGain();
+    bgmGainNode.gain.value = 0;
+    bgmGainNode.connect(ctx.destination);
+  }
+  if (bgmIntervalId) {
+    setBgmGainTarget();
+    return;
+  }
+  bgmStep = 0;
+  bgmNextTime = ctx.currentTime + 0.1;
+  bgmTick();
+  bgmIntervalId = setInterval(bgmTick, 60);
+  setBgmGainTarget();
+}
+
+function stopBgm() {
+  if (bgmIntervalId) {
+    clearInterval(bgmIntervalId);
+    bgmIntervalId = null;
+  }
+  if (bgmGainNode && sharedAudioCtx) {
+    const now = sharedAudioCtx.currentTime;
+    bgmGainNode.gain.cancelScheduledValues(now);
+    bgmGainNode.gain.setTargetAtTime(0, now, 0.05);
+  }
+}
+
 function updateBGM() {
   if (masterSound && bgmEnabled) {
-    bgm.play().catch(() => {});
+    startBgm();
   } else {
-    bgm.pause();
+    stopBgm();
   }
 }
 
@@ -1876,8 +1973,7 @@ function update() {
     }
     updateProgressDisplay();
 
-    if (score % 10 === 0) playEat10Sound();
-    else playEatSound();
+    playEatSound();
 
     if (snake.length === cols * rows) {
       draw();
@@ -1911,7 +2007,11 @@ function gameOver() {
 
   document.getElementById("restart").style.display = "block";
   document.body.classList.remove("in-run");
+  stopBgm();
   playGameOverSound();
+  // Game-over sting runs ~1.3s; resume BGM right after so the menu/continue
+  // screen has music again (respecting current sound settings).
+  setTimeout(() => updateBGM(), 1500);
   vibrate(80);
   const isNewBest = score > runStartedHighScore;
   showOverlayText("GAME OVER", isNewBest ? "New Best!" : "");
