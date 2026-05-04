@@ -976,11 +976,14 @@
         padding: 4px 12px;
       }
 
-      body.sideways #high-score-display,
       body.sideways #keysHelp,
       body.sideways #game-status,
       body.sideways #objective-hint {
         display: none;
+      }
+
+      body.sideways #high-score-display {
+        font-size: 11px;
       }
 
       body.sideways #score-display {
@@ -1807,6 +1810,10 @@ function setPaused(value) {
     redoSincePauseOpened = false;
     updateRedoText();
     pauseModal.style.display = "block";
+    // Block the synthesized click that follows a tap-to-pause from landing
+    // on a button inside the just-opened modal (iOS click-through).
+    pauseModal.style.pointerEvents = "none";
+    setTimeout(() => { pauseModal.style.pointerEvents = ""; }, 350);
     updateStatus("Paused.");
   } else {
     pauseModal.style.display = "none";
