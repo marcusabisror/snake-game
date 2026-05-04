@@ -912,6 +912,14 @@
 
     /* Sideways + landscape: top-bar / toggle row / board-left + dpad-right */
     @media (max-width: 900px) and (orientation: landscape) {
+      .modal-content {
+        box-sizing: border-box;
+        margin: 8px auto;
+        max-height: calc(100vh - 16px);
+        max-height: calc(100dvh - 16px);
+        padding: 12px;
+      }
+
       body.sideways {
         padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
       }
@@ -1934,6 +1942,10 @@ function startCountdownThenResume() {
   clearUiTimers();
   let value = 3;
   inCountdown = true;
+  // Re-enter the in-run layout/touch-action regime in case we're resuming
+  // after a game-over Continue (gameOver removed `in-run`).
+  document.body.classList.add("in-run");
+  document.getElementById("restart").style.display = "none";
   setPaused(false);
   hideOverlayText();
   screenDim.classList.remove("visible");
